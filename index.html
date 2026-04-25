@@ -3,52 +3,154 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tools</title>
+<title>Tools by Cady</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
-  header { padding: 48px 48px 0; }
-  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
-  .subtitle { color: #666; font-size: 15px; margin-top: 8px; }
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 40px 48px 64px; }
-  .card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: flex; flex-direction: column; gap: 10px; }
-  .card:hover { background: #1a1a1a; border-color: #2a2a2a; transform: translateY(-1px); }
-  .card-icon { font-size: 24px; }
-  .card-title { font-size: 16px; font-weight: 600; }
-  .card-desc { font-size: 13px; color: #666; line-height: 1.5; }
-  .tag { display: inline-block; font-size: 11px; color: #2563eb; background: rgba(37,99,235,0.1); border-radius: 4px; padding: 2px 8px; border: 1px solid rgba(37,99,235,0.2); }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
+
+  /* Hero */
+  .hero { padding: 72px 48px 56px; max-width: 680px; }
+  .hero h1 { font-size: 40px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.15; }
+  .hero h1 span { color: #60a5fa; }
+  .hero p { font-size: 18px; color: #888; margin-top: 16px; line-height: 1.6; }
+  .trust-bar { display: flex; gap: 24px; margin-top: 28px; flex-wrap: wrap; }
+  .trust-item { display: flex; align-items: center; gap: 6px; font-size: 14px; color: #666; }
+  .trust-dot { width: 6px; height: 6px; border-radius: 50%; background: #22c55e; }
+
+  /* Tools grid */
+  .section-label { padding: 0 48px; font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; padding: 0 48px 80px; }
+  .card { background: #141414; border: 1px solid #1e1e1e; border-radius: 14px; padding: 28px; text-decoration: none; color: inherit; transition: all 0.15s; display: flex; flex-direction: column; gap: 0; }
+  .card:hover { background: #181818; border-color: #2a2a2a; transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .card-icon { font-size: 28px; line-height: 1; }
+  .open-btn { font-size: 12px; color: #60a5fa; border: 1px solid rgba(96,165,250,0.3); border-radius: 20px; padding: 4px 12px; background: rgba(96,165,250,0.07); transition: all 0.15s; white-space: nowrap; }
+  .card:hover .open-btn { background: rgba(96,165,250,0.15); border-color: rgba(96,165,250,0.5); }
+  .card-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+  .card-plain { font-size: 15px; color: #bbb; line-height: 1.55; margin-bottom: 16px; }
+  .card-use { font-size: 13px; color: #666; line-height: 1.5; padding-top: 14px; border-top: 1px solid #1e1e1e; }
+  .card-use strong { color: #888; font-weight: 500; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid #1a1a1a; margin: 0 48px 48px; }
+
+  /* Dev section */
+  .dev-section { padding: 0 48px 80px; max-width: 800px; }
+  .dev-section h2 { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+  .dev-section .dev-sub { font-size: 14px; color: #666; margin-bottom: 28px; }
+  .dev-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .dev-block h3 { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .dev-block p, .dev-block li { font-size: 14px; color: #666; line-height: 1.6; }
+  .dev-block ul { list-style: none; padding: 0; }
+  .dev-block li::before { content: '— '; color: #444; }
+  .dev-block a { color: #60a5fa; text-decoration: none; }
+  .dev-block a:hover { text-decoration: underline; }
+  code { font-family: 'Menlo', 'Monaco', monospace; font-size: 12px; background: #1a1a1a; padding: 2px 6px; border-radius: 4px; color: #a5b4fc; }
+
+  @media (max-width: 600px) {
+    .hero { padding: 40px 24px 40px; }
+    .hero h1 { font-size: 28px; }
+    .grid, .section-label, .dev-section, hr { padding-left: 24px; padding-right: 24px; }
+    .dev-grid { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>Tools</h1>
-  <p class="subtitle">Fast, in-browser utilities. No upload. No tracking.</p>
-</header>
-<div class="grid">
-  <a class="card" href="json-formatter/">
-    <div class="card-icon">{ }</div>
-    <div class="card-title">JSON Formatter</div>
-    <div class="card-desc">Format, validate, and minify JSON. Instant error highlighting.</div>
-    <span class="tag">dev</span>
-  </a>
-  <a class="card" href="csv-to-json/">
-    <div class="card-icon">⇄</div>
-    <div class="card-title">CSV ↔ JSON</div>
-    <div class="card-desc">Convert between CSV and JSON. Auto-detects format, supports multiple delimiters.</div>
-    <span class="tag">dev</span>
-  </a>
-  <a class="card" href="diff-viewer/">
-    <div class="card-icon">±</div>
-    <div class="card-title">Diff Viewer</div>
-    <div class="card-desc">Paste two blocks of text and see exactly what changed, line by line.</div>
-    <span class="tag">dev</span>
-  </a>
-  <a class="card" href="unit-converter/">
-    <div class="card-icon">↔</div>
-    <div class="card-title">Unit Converter</div>
-    <div class="card-desc">Length, weight, temperature, volume, data, cooking, and more.</div>
-    <span class="tag">utility</span>
-  </a>
+
+<div class="hero">
+  <h1>Tools that <span>just work</span>.<br>No account needed.</h1>
+  <p>Small, fast utilities for everyday tasks. Open one, use it, done — nothing is uploaded anywhere.</p>
+  <div class="trust-bar">
+    <div class="trust-item"><span class="trust-dot"></span> Runs entirely in your browser</div>
+    <div class="trust-item"><span class="trust-dot"></span> No login or account</div>
+    <div class="trust-item"><span class="trust-dot"></span> Free forever</div>
+  </div>
 </div>
+
+<p class="section-label">Available tools</p>
+<div class="grid">
+
+  <a class="card" href="json-formatter/">
+    <div class="card-top">
+      <div class="card-icon">{ }</div>
+      <span class="open-btn">Open tool →</span>
+    </div>
+    <div class="card-title">JSON Formatter</div>
+    <div class="card-plain">Paste in messy, hard-to-read data and instantly see it cleaned up and organized. Also tells you if something is broken.</div>
+    <div class="card-use"><strong>Good for:</strong> Making sense of data you copied from somewhere, checking if a file has errors, shrinking data down before sending it.</div>
+  </a>
+
+  <a class="card" href="csv-to-json/">
+    <div class="card-top">
+      <div class="card-icon">⇄</div>
+      <span class="open-btn">Open tool →</span>
+    </div>
+    <div class="card-title">CSV ↔ JSON Converter</div>
+    <div class="card-plain">Convert spreadsheet-style data (CSV) into a structured format (JSON), or the other way around. Just paste it in — the tool figures out which way to go.</div>
+    <div class="card-use"><strong>Good for:</strong> Moving data between spreadsheets and apps, reformatting exports from Excel or Google Sheets, prepping data for an API.</div>
+  </a>
+
+  <a class="card" href="diff-viewer/">
+    <div class="card-top">
+      <div class="card-icon">±</div>
+      <span class="open-btn">Open tool →</span>
+    </div>
+    <div class="card-title">Diff Viewer</div>
+    <div class="card-plain">Paste two versions of any text and see exactly what changed — additions are green, removals are red. Like "track changes" but for anything.</div>
+    <div class="card-use"><strong>Good for:</strong> Comparing two versions of a document, spotting what changed in a contract, reviewing edits before accepting them.</div>
+  </a>
+
+  <a class="card" href="unit-converter/">
+    <div class="card-top">
+      <div class="card-icon">↔</div>
+      <span class="open-btn">Open tool →</span>
+    </div>
+    <div class="card-title">Unit Converter</div>
+    <div class="card-plain">Convert between any units — length, weight, temperature, cooking, data sizes, and more. Type a number and see all conversions at once.</div>
+    <div class="card-use"><strong>Good for:</strong> Cooking with a foreign recipe, understanding file sizes, converting measurements for a project, anything your phone calculator can't do.</div>
+  </a>
+
+</div>
+
+<hr>
+
+<div class="dev-section">
+  <h2>For developers</h2>
+  <p class="dev-sub">How these are built and how to use or extend them.</p>
+  <div class="dev-grid">
+    <div class="dev-block">
+      <h3>Stack</h3>
+      <ul>
+        <li>Vanilla HTML, CSS, JavaScript — zero dependencies</li>
+        <li>No build step, no framework, no npm</li>
+        <li>Each tool is a single self-contained <code>index.html</code></li>
+        <li>Hosted on GitHub Pages (static, free)</li>
+      </ul>
+    </div>
+    <div class="dev-block">
+      <h3>Algorithms</h3>
+      <ul>
+        <li>JSON: native <code>JSON.parse</code> / <code>JSON.stringify</code></li>
+        <li>CSV: custom RFC-4180 parser (handles quoted fields)</li>
+        <li>Diff: LCS-based Myers diff, O(ND) space</li>
+        <li>Units: multiplicative factor table with special-cased temperature</li>
+      </ul>
+    </div>
+    <div class="dev-block">
+      <h3>Source code</h3>
+      <p>All tools are open source. View, fork, or contribute on <a href="https://github.com/cadyberry/tools" target="_blank">GitHub</a>. Each tool lives in its own folder — clone the repo and open any <code>index.html</code> locally, no server required.</p>
+    </div>
+    <div class="dev-block">
+      <h3>Adding a tool</h3>
+      <ul>
+        <li>Create a new folder with an <code>index.html</code></li>
+        <li>Add a card to this page's grid</li>
+        <li>Keep it self-contained — no external fetch calls</li>
+        <li>PRs welcome</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

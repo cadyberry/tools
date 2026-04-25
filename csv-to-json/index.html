@@ -12,6 +12,18 @@
   header a:hover { color: #fff; }
   header span { color: #444; }
   h1 { font-size: 18px; font-weight: 600; }
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
   .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
   .pane { display: flex; flex-direction: column; }
   .pane + .pane { border-left: 1px solid #222; }
@@ -38,6 +50,19 @@
   <span>/</span>
   <h1>CSV ↔ JSON Converter</h1>
 </header>
+<div class="help-bar">
+  <span><strong>CSV ↔ JSON Converter</strong> — switch between spreadsheet data and structured data instantly</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Paste your data on the left</strong>CSV looks like rows of values separated by commas. JSON looks like <code>{"key": "value"}</code>. The tool detects which one you pasted.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Pick a direction if needed</strong>Use the "CSV → JSON" or "JSON → CSV" buttons to set which way to convert. Usually auto-detected.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Get your result</strong>The right panel shows the converted output. Hit "Copy" or "Download" to save it.</div></div>
+    <div class="help-step"><div class="step-num">4</div><div class="step-text"><strong>Different separator?</strong>If your CSV uses semicolons or tabs instead of commas, change the "delimiter" dropdown before converting.</div></div>
+  </div>
+  <div class="help-note">Nothing leaves your browser. Your data is never sent anywhere.</div>
+</div>
 <div class="main">
   <div class="pane">
     <div class="pane-header">
@@ -174,6 +199,11 @@
     a.href = URL.createObjectURL(blob);
     a.download = `converted.${ext}`;
     a.click();
+  }
+  function toggleHelp() {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
   }
 </script>
 </body>

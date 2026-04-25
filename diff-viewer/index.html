@@ -12,6 +12,18 @@
   header a:hover { color: #fff; }
   header span { color: #444; }
   h1 { font-size: 18px; font-weight: 600; }
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
   .inputs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #222; }
   .pane { display: flex; flex-direction: column; }
   .pane + .pane { border-left: 1px solid #222; }
@@ -50,6 +62,19 @@
   <span>/</span>
   <h1>Diff Viewer</h1>
 </header>
+<div class="help-bar">
+  <span><strong>Diff Viewer</strong> — see exactly what changed between two versions of any text</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Paste the original on the left</strong>This is the "before" — the older version of the text.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Paste the modified on the right</strong>This is the "after" — the newer version.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Read the result</strong>Green lines were added. Red lines were removed. Grey lines are unchanged.</div></div>
+    <div class="help-step"><div class="step-num">4</div><div class="step-text"><strong>Swap if needed</strong>Hit "Swap" to flip which side is original and which is modified.</div></div>
+  </div>
+  <div class="help-note">Works with any text — documents, code, emails, contracts, anything. Nothing is sent anywhere.</div>
+</div>
 <div class="inputs">
   <div class="pane">
     <div class="pane-header"><span class="pane-label">Original</span></div>
@@ -157,6 +182,11 @@
     document.getElementById('diff-output').innerHTML = '<div class="empty-state">Paste text in both panels and click Compare.</div>';
     document.getElementById('summary').innerHTML = '';
     document.getElementById('status').textContent = '';
+  }
+  function toggleHelp() {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
   }
 </script>
 </body>
