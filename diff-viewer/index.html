@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Diff Viewer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+  .inputs { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 1px solid #222; }
+  .pane { display: flex; flex-direction: column; }
+  .pane + .pane { border-left: 1px solid #222; }
+  .pane-header { padding: 12px 20px; border-bottom: 1px solid #222; background: #141414; display: flex; justify-content: space-between; align-items: center; }
+  .pane-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea { padding: 16px 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.6; background: #0f0f0f; border: none; outline: none; resize: none; color: #e0e0e0; height: 240px; width: 100%; }
+  .controls { padding: 12px 24px; border-bottom: 1px solid #222; display: flex; gap: 8px; align-items: center; background: #141414; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .btn.primary:hover { background: #1d4ed8; }
+  .btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .status { font-size: 12px; color: #888; margin-left: auto; }
+  .diff-output { flex: 1; overflow: auto; padding: 0; }
+  .diff-line { display: flex; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.6; }
+  .diff-line:hover { background: rgba(255,255,255,0.03); }
+  .line-num { min-width: 48px; padding: 0 12px; color: #555; text-align: right; user-select: none; border-right: 1px solid #1e1e1e; }
+  .line-content { padding: 0 16px; flex: 1; white-space: pre-wrap; word-break: break-all; }
+  .added { background: rgba(34,197,94,0.1); }
+  .added .line-content { color: #86efac; }
+  .added .line-num { color: #4ade80; background: rgba(34,197,94,0.05); }
+  .removed { background: rgba(239,68,68,0.1); }
+  .removed .line-content { color: #fca5a5; }
+  .removed .line-num { color: #f87171; background: rgba(239,68,68,0.05); }
+  .unchanged .line-content { color: #9ca3af; }
+  .empty-state { padding: 48px; text-align: center; color: #555; font-size: 14px; }
+  .summary { display: flex; gap: 16px; }
+  .summary-item { font-size: 12px; }
+  .added-count { color: #4ade80; }
+  .removed-count { color: #f87171; }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>Diff Viewer</h1>
+</header>
+<div class="inputs">
+  <div class="pane">
+    <div class="pane-header"><span class="pane-label">Original</span></div>
+    <textarea id="left" placeholder="Paste original text..." oninput="autoDiff()"></textarea>
+  </div>
+  <div class="pane">
+    <div class="pane-header"><span class="pane-label">Modified</span></div>
+    <textarea id="right" placeholder="Paste modified text..." oninput="autoDiff()"></textarea>
+  </div>
+</div>
+<div class="controls">
+  <button class="btn primary" onclick="diff()">Compare</button>
+  <button class="btn" onclick="swap()">Swap</button>
+  <button class="btn" onclick="clear()">Clear</button>
+  <div class="summary" id="summary"></div>
+  <span class="status" id="status"></span>
+</div>
+<div class="diff-output" id="diff-output">
+  <div class="empty-state">Paste text in both panels and click Compare.</div>
+</div>
+
+<script>
+  function autoDiff() {
+    const l = document.getElementById('left').value;
+    const r = document.getElementById('right').value;
+    if (l && r) diff();
+  }
+
+  function diff() {
+    const left = document.getElementById('left').value;
+    const right = document.getElementById('right').value;
+    if (!left && !right) return;
+
+    const leftLines = left.split('\n');
+    const rightLines = right.split('\n');
+    const result = computeDiff(leftLines, rightLines);
+    renderDiff(result);
+  }
+
+  function computeDiff(a, b) {
+    // Myers diff algorithm (simplified LCS-based)
+    const m = a.length, n = b.length;
+    const dp = Array.from({length: m+1}, () => new Array(n+1).fill(0));
+    for (let i = m-1; i >= 0; i--)
+      for (let j = n-1; j >= 0; j--)
+        dp[i][j] = a[i] === b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+
+    const result = [];
+    let i = 0, j = 0;
+    while (i < m || j < n) {
+      if (i < m && j < n && a[i] === b[j]) {
+        result.push({type: 'unchanged', left: a[i], right: b[j], li: i+1, ri: j+1});
+        i++; j++;
+      } else if (j < n && (i >= m || dp[i][j+1] >= dp[i+1][j])) {
+        result.push({type: 'added', right: b[j], ri: j+1});
+        j++;
+      } else {
+        result.push({type: 'removed', left: a[i], li: i+1});
+        i++;
+      }
+    }
+    return result;
+  }
+
+  function renderDiff(result) {
+    const container = document.getElementById('diff-output');
+    let added = 0, removed = 0;
+
+    if (!result.length) {
+      container.innerHTML = '<div class="empty-state">No differences found.</div>';
+      return;
+    }
+
+    const html = result.map(r => {
+      if (r.type === 'added') { added++;
+        return `<div class="diff-line added"><span class="line-num">+${r.ri}</span><span class="line-content">+ ${escHtml(r.right)}</span></div>`;
+      } else if (r.type === 'removed') { removed++;
+        return `<div class="diff-line removed"><span class="line-num">${r.li}</span><span class="line-content">- ${escHtml(r.left)}</span></div>`;
+      } else {
+        return `<div class="diff-line unchanged"><span class="line-num">${r.li}</span><span class="line-content">  ${escHtml(r.left)}</span></div>`;
+      }
+    }).join('');
+
+    container.innerHTML = html;
+
+    const summary = document.getElementById('summary');
+    summary.innerHTML = `<span class="summary-item added-count">+${added} added</span><span class="summary-item removed-count">-${removed} removed</span>`;
+    document.getElementById('status').textContent = result.length + ' lines';
+  }
+
+  function escHtml(s) {
+    return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function swap() {
+    const l = document.getElementById('left');
+    const r = document.getElementById('right');
+    [l.value, r.value] = [r.value, l.value];
+    diff();
+  }
+
+  function clear() {
+    document.getElementById('left').value = '';
+    document.getElementById('right').value = '';
+    document.getElementById('diff-output').innerHTML = '<div class="empty-state">Paste text in both panels and click Compare.</div>';
+    document.getElementById('summary').innerHTML = '';
+    document.getElementById('status').textContent = '';
+  }
+</script>
+</body>
+</html>

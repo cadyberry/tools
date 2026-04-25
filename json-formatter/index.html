@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JSON Formatter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+  .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+  .pane { display: flex; flex-direction: column; }
+  .pane + .pane { border-left: 1px solid #222; }
+  .pane-header { padding: 12px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; background: #141414; }
+  .pane-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea, .output { flex: 1; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.6; background: #0f0f0f; border: none; outline: none; resize: none; color: #e0e0e0; min-height: 400px; }
+  .output { white-space: pre; overflow: auto; }
+  .output.error { color: #ff6b6b; }
+  .output.success { color: #e0e0e0; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .btn.primary:hover { background: #1d4ed8; }
+  .controls { padding: 12px 20px; border-top: 1px solid #222; display: flex; gap: 8px; background: #141414; }
+  .status { font-size: 12px; color: #888; display: flex; align-items: center; gap: 6px; margin-left: auto; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #444; }
+  .dot.ok { background: #22c55e; }
+  .dot.err { background: #ef4444; }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>JSON Formatter</h1>
+</header>
+<div class="main">
+  <div class="pane">
+    <div class="pane-header">
+      <span class="pane-label">Input</span>
+      <button class="btn" onclick="clearInput()">Clear</button>
+    </div>
+    <textarea id="input" placeholder='Paste your JSON here...' oninput="format()"></textarea>
+    <div class="controls">
+      <button class="btn primary" onclick="format()">Format</button>
+      <button class="btn" onclick="minify()">Minify</button>
+    </div>
+  </div>
+  <div class="pane">
+    <div class="pane-header">
+      <span class="pane-label">Output</span>
+      <button class="btn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="output" id="output">Formatted JSON will appear here.</div>
+    <div class="controls">
+      <span class="status"><span class="dot" id="dot"></span><span id="status-text">ready</span></span>
+    </div>
+  </div>
+</div>
+<script>
+  const input = document.getElementById('input');
+  const output = document.getElementById('output');
+  const dot = document.getElementById('dot');
+  const statusText = document.getElementById('status-text');
+
+  function setStatus(ok, msg) {
+    dot.className = 'dot ' + (ok ? 'ok' : 'err');
+    statusText.textContent = msg;
+  }
+
+  function format() {
+    const val = input.value.trim();
+    if (!val) { output.textContent = ''; output.className = 'output'; setStatus(false, 'ready'); return; }
+    try {
+      const parsed = JSON.parse(val);
+      output.textContent = JSON.stringify(parsed, null, 2);
+      output.className = 'output success';
+      const keys = countKeys(parsed);
+      setStatus(true, `valid · ${keys} key${keys !== 1 ? 's' : ''}`);
+    } catch (e) {
+      output.textContent = e.message;
+      output.className = 'output error';
+      setStatus(false, 'invalid JSON');
+    }
+  }
+
+  function minify() {
+    const val = input.value.trim();
+    if (!val) return;
+    try {
+      output.textContent = JSON.stringify(JSON.parse(val));
+      output.className = 'output success';
+      setStatus(true, 'minified');
+    } catch (e) {
+      output.textContent = e.message;
+      output.className = 'output error';
+      setStatus(false, 'invalid JSON');
+    }
+  }
+
+  function countKeys(obj, count = 0) {
+    if (typeof obj === 'object' && obj !== null) {
+      for (const k in obj) { count++; count = countKeys(obj[k], count); }
+    }
+    return count;
+  }
+
+  function clearInput() { input.value = ''; output.textContent = ''; output.className = 'output'; setStatus(false, 'ready'); }
+
+  function copyOutput() {
+    navigator.clipboard.writeText(output.textContent);
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }
+</script>
+</body>
+</html>

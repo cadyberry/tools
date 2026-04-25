@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tools</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; }
+  header { padding: 48px 48px 0; }
+  h1 { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; }
+  .subtitle { color: #666; font-size: 15px; margin-top: 8px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 40px 48px 64px; }
+  .card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 24px; text-decoration: none; color: inherit; transition: all 0.15s; display: flex; flex-direction: column; gap: 10px; }
+  .card:hover { background: #1a1a1a; border-color: #2a2a2a; transform: translateY(-1px); }
+  .card-icon { font-size: 24px; }
+  .card-title { font-size: 16px; font-weight: 600; }
+  .card-desc { font-size: 13px; color: #666; line-height: 1.5; }
+  .tag { display: inline-block; font-size: 11px; color: #2563eb; background: rgba(37,99,235,0.1); border-radius: 4px; padding: 2px 8px; border: 1px solid rgba(37,99,235,0.2); }
+</style>
+</head>
+<body>
+<header>
+  <h1>Tools</h1>
+  <p class="subtitle">Fast, in-browser utilities. No upload. No tracking.</p>
+</header>
+<div class="grid">
+  <a class="card" href="json-formatter/">
+    <div class="card-icon">{ }</div>
+    <div class="card-title">JSON Formatter</div>
+    <div class="card-desc">Format, validate, and minify JSON. Instant error highlighting.</div>
+    <span class="tag">dev</span>
+  </a>
+  <a class="card" href="csv-to-json/">
+    <div class="card-icon">⇄</div>
+    <div class="card-title">CSV ↔ JSON</div>
+    <div class="card-desc">Convert between CSV and JSON. Auto-detects format, supports multiple delimiters.</div>
+    <span class="tag">dev</span>
+  </a>
+  <a class="card" href="diff-viewer/">
+    <div class="card-icon">±</div>
+    <div class="card-title">Diff Viewer</div>
+    <div class="card-desc">Paste two blocks of text and see exactly what changed, line by line.</div>
+    <span class="tag">dev</span>
+  </a>
+  <a class="card" href="unit-converter/">
+    <div class="card-icon">↔</div>
+    <div class="card-title">Unit Converter</div>
+    <div class="card-desc">Length, weight, temperature, volume, data, cooking, and more.</div>
+    <span class="tag">utility</span>
+  </a>
+</div>
+</body>
+</html>

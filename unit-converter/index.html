@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unit Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+  .layout { display: flex; flex: 1; }
+  .sidebar { width: 200px; border-right: 1px solid #222; padding: 16px 0; }
+  .cat-btn { display: block; width: 100%; text-align: left; padding: 10px 20px; background: none; border: none; color: #888; font-size: 14px; cursor: pointer; transition: all 0.15s; }
+  .cat-btn:hover { color: #fff; background: #1a1a1a; }
+  .cat-btn.active { color: #60a5fa; background: #1a1a1a; border-left: 2px solid #2563eb; }
+  .content { flex: 1; padding: 32px; max-width: 600px; }
+  .cat-title { font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+  .converter-row { display: flex; gap: 12px; align-items: center; margin-bottom: 16px; }
+  input[type=number] { flex: 1; padding: 12px 16px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; color: #fff; font-size: 16px; outline: none; transition: border-color 0.15s; }
+  input[type=number]:focus { border-color: #2563eb; }
+  input[type=number]::-webkit-inner-spin-button { opacity: 0.3; }
+  select { padding: 12px 16px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; color: #ccc; font-size: 14px; outline: none; cursor: pointer; min-width: 160px; }
+  select:focus { border-color: #2563eb; }
+  .swap-btn { padding: 10px 14px; background: #1e1e1e; border: 1px solid #333; border-radius: 8px; color: #888; cursor: pointer; font-size: 16px; transition: all 0.15s; flex-shrink: 0; }
+  .swap-btn:hover { background: #2a2a2a; color: #fff; }
+  .result-box { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 20px 24px; margin-top: 8px; }
+  .result-value { font-size: 28px; font-weight: 600; color: #60a5fa; font-family: 'Menlo', monospace; }
+  .result-label { font-size: 13px; color: #666; margin-top: 4px; }
+  .all-conversions { margin-top: 24px; }
+  .all-conversions h3 { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; }
+  .conv-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #1a1a1a; font-size: 14px; }
+  .conv-row:last-child { border-bottom: none; }
+  .conv-unit { color: #888; }
+  .conv-val { color: #e0e0e0; font-family: 'Menlo', monospace; }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>Unit Converter</h1>
+</header>
+<div class="layout">
+  <nav class="sidebar">
+    <button class="cat-btn active" onclick="setCategory('length')">Length</button>
+    <button class="cat-btn" onclick="setCategory('weight')">Weight</button>
+    <button class="cat-btn" onclick="setCategory('temperature')">Temperature</button>
+    <button class="cat-btn" onclick="setCategory('area')">Area</button>
+    <button class="cat-btn" onclick="setCategory('volume')">Volume</button>
+    <button class="cat-btn" onclick="setCategory('speed')">Speed</button>
+    <button class="cat-btn" onclick="setCategory('data')">Data</button>
+    <button class="cat-btn" onclick="setCategory('time')">Time</button>
+    <button class="cat-btn" onclick="setCategory('cooking')">Cooking</button>
+  </nav>
+  <div class="content">
+    <div class="cat-title" id="cat-title">Length</div>
+    <div class="converter-row">
+      <input type="number" id="from-val" value="1" oninput="convert()">
+      <select id="from-unit" onchange="convert()"></select>
+    </div>
+    <div class="converter-row">
+      <button class="swap-btn" onclick="swapUnits()" title="Swap">⇅</button>
+      <select id="to-unit" onchange="convert()"></select>
+    </div>
+    <div class="result-box">
+      <div class="result-value" id="result-value">—</div>
+      <div class="result-label" id="result-label"></div>
+    </div>
+    <div class="all-conversions">
+      <h3>All conversions</h3>
+      <div id="all-list"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const categories = {
+  length: {
+    title: 'Length',
+    base: 'meter',
+    units: {
+      millimeter: 0.001, centimeter: 0.01, meter: 1, kilometer: 1000,
+      inch: 0.0254, foot: 0.3048, yard: 0.9144, mile: 1609.344,
+      'nautical mile': 1852, lightyear: 9.461e15
+    }
+  },
+  weight: {
+    title: 'Weight / Mass',
+    base: 'kilogram',
+    units: {
+      milligram: 1e-6, gram: 0.001, kilogram: 1, 'metric ton': 1000,
+      ounce: 0.028349523, pound: 0.45359237, stone: 6.35029318, 'short ton': 907.185
+    }
+  },
+  temperature: {
+    title: 'Temperature',
+    special: true,
+    units: ['celsius', 'fahrenheit', 'kelvin']
+  },
+  area: {
+    title: 'Area',
+    base: 'sq meter',
+    units: {
+      'sq millimeter': 1e-6, 'sq centimeter': 1e-4, 'sq meter': 1, 'sq kilometer': 1e6,
+      'sq inch': 6.4516e-4, 'sq foot': 0.092903, 'sq yard': 0.836127, acre: 4046.86, 'sq mile': 2.59e6
+    }
+  },
+  volume: {
+    title: 'Volume',
+    base: 'liter',
+    units: {
+      milliliter: 0.001, liter: 1, 'cubic meter': 1000,
+      teaspoon: 0.00492892, tablespoon: 0.0147868, 'fluid oz': 0.0295735,
+      cup: 0.236588, pint: 0.473176, quart: 0.946353, gallon: 3.78541,
+      'cubic inch': 0.0163871, 'cubic foot': 28.3168
+    }
+  },
+  speed: {
+    title: 'Speed',
+    base: 'm/s',
+    units: {
+      'm/s': 1, 'km/h': 0.277778, 'mph': 0.44704, knot: 0.514444, 'ft/s': 0.3048, mach: 340.29
+    }
+  },
+  data: {
+    title: 'Data',
+    base: 'byte',
+    units: {
+      bit: 0.125, byte: 1, kilobyte: 1024, megabyte: 1048576, gigabyte: 1073741824,
+      terabyte: 1099511627776, petabyte: 1125899906842624,
+      kibibyte: 1024, mebibyte: 1048576
+    }
+  },
+  time: {
+    title: 'Time',
+    base: 'second',
+    units: {
+      nanosecond: 1e-9, microsecond: 1e-6, millisecond: 0.001, second: 1,
+      minute: 60, hour: 3600, day: 86400, week: 604800,
+      month: 2629800, year: 31557600, decade: 315576000
+    }
+  },
+  cooking: {
+    title: 'Cooking',
+    base: 'ml',
+    units: {
+      ml: 1, liter: 1000, teaspoon: 4.92892, tablespoon: 14.7868,
+      'fluid oz': 29.5735, cup: 236.588, pint: 473.176, quart: 946.353, gallon: 3785.41
+    }
+  }
+};
+
+let currentCat = 'length';
+
+function setCategory(cat) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('cat-title').textContent = categories[cat].title;
+  populateUnits(cat);
+  convert();
+}
+
+function populateUnits(cat) {
+  const data = categories[cat];
+  const fromSel = document.getElementById('from-unit');
+  const toSel = document.getElementById('to-unit');
+  const units = data.special ? data.units : Object.keys(data.units);
+  fromSel.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+  toSel.innerHTML = units.map(u => `<option value="${u}">${u}</option>`).join('');
+  if (units.length > 1) toSel.value = units[1];
+}
+
+function convertTemp(val, from, to) {
+  let celsius;
+  if (from === 'celsius') celsius = val;
+  else if (from === 'fahrenheit') celsius = (val - 32) * 5/9;
+  else celsius = val - 273.15;
+  if (to === 'celsius') return celsius;
+  if (to === 'fahrenheit') return celsius * 9/5 + 32;
+  return celsius + 273.15;
+}
+
+function convert() {
+  const cat = categories[currentCat];
+  const fromVal = parseFloat(document.getElementById('from-val').value);
+  const fromUnit = document.getElementById('from-unit').value;
+  const toUnit = document.getElementById('to-unit').value;
+
+  if (isNaN(fromVal)) { document.getElementById('result-value').textContent = '—'; return; }
+
+  let result;
+  if (cat.special) {
+    result = convertTemp(fromVal, fromUnit, toUnit);
+  } else {
+    const baseVal = fromVal * cat.units[fromUnit];
+    result = baseVal / cat.units[toUnit];
+  }
+
+  const fmt = v => {
+    if (Math.abs(v) >= 1e9 || (Math.abs(v) < 0.0001 && v !== 0)) return v.toExponential(4);
+    const decimals = Math.abs(v) >= 100 ? 4 : Math.abs(v) >= 1 ? 6 : 8;
+    return parseFloat(v.toPrecision(decimals)).toLocaleString('en-US', {maximumFractionDigits: 10});
+  };
+
+  document.getElementById('result-value').textContent = fmt(result);
+  document.getElementById('result-label').textContent = `${fromVal} ${fromUnit} = ${fmt(result)} ${toUnit}`;
+
+  // All conversions
+  const units = cat.special ? cat.units : Object.keys(cat.units);
+  const allList = document.getElementById('all-list');
+  allList.innerHTML = units.map(u => {
+    let v;
+    if (cat.special) { v = convertTemp(fromVal, fromUnit, u); }
+    else { v = (fromVal * cat.units[fromUnit]) / cat.units[u]; }
+    return `<div class="conv-row"><span class="conv-unit">${u}</span><span class="conv-val">${fmt(v)}</span></div>`;
+  }).join('');
+}
+
+// Init
+populateUnits('length');
+convert();
+
+function swapUnits() {
+  const f = document.getElementById('from-unit');
+  const t = document.getElementById('to-unit');
+  [f.value, t.value] = [t.value, f.value];
+  convert();
+}
+</script>
+</body>
+</html>
