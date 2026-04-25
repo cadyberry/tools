@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>List Sorter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
+
+  .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; }
+  .pane { display: flex; flex-direction: column; }
+  .pane + .pane { border-left: 1px solid #222; }
+  .pane-header { padding: 12px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; background: #141414; }
+  .pane-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea { flex: 1; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.8; background: #0f0f0f; border: none; outline: none; resize: none; color: #e0e0e0; min-height: 400px; }
+  .output { flex: 1; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.8; background: #0f0f0f; white-space: pre-wrap; overflow: auto; min-height: 400px; color: #e0e0e0; }
+  .output.empty { color: #444; }
+
+  .controls { padding: 12px 20px; border-top: 1px solid #222; background: #141414; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .divider { width: 1px; height: 20px; background: #2a2a2a; }
+  .status { font-size: 12px; color: #555; margin-left: auto; }
+
+  .options-row { padding: 10px 20px; border-bottom: 1px solid #1a1a1a; display: flex; gap: 16px; background: #0d0d0d; flex-wrap: wrap; }
+  .option { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #888; cursor: pointer; }
+  .option input[type=checkbox] { accent-color: #2563eb; cursor: pointer; }
+  .option:hover { color: #ccc; }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>List Sorter</h1>
+</header>
+
+<div class="help-bar">
+  <span><strong>List Sorter</strong> — sort, clean, shuffle, and deduplicate any list of text</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Paste your list on the left</strong>One item per line. Could be names, tasks, URLs, words — anything.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Pick how to sort it</strong>Use the buttons to sort A→Z, Z→A, by length, randomly, or reverse the order.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Clean it up</strong>Toggle "Remove duplicates" or "Trim spaces" to tidy the list automatically.</div></div>
+    <div class="help-step"><div class="step-num">4</div><div class="step-text"><strong>Copy the result</strong>Hit "Copy" on the right side to grab your sorted list.</div></div>
+  </div>
+  <div class="help-note">Works with any text — names, to-do items, URLs, code snippets, anything line-by-line.</div>
+</div>
+
+<div class="main">
+  <div class="pane">
+    <div class="pane-header">
+      <span class="pane-label">Input</span>
+      <button class="btn" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="options-row">
+      <label class="option"><input type="checkbox" id="opt-dedup" onchange="process()"> Remove duplicates</label>
+      <label class="option"><input type="checkbox" id="opt-trim" onchange="process()" checked> Trim spaces</label>
+      <label class="option"><input type="checkbox" id="opt-empty" onchange="process()" checked> Remove blank lines</label>
+      <label class="option"><input type="checkbox" id="opt-number" onchange="process()"> Number lines</label>
+      <label class="option"><input type="checkbox" id="opt-case" onchange="process()"> Ignore case when sorting</label>
+    </div>
+    <textarea id="input" placeholder="Paste your list here, one item per line..." oninput="process()"></textarea>
+    <div class="controls">
+      <span style="font-size:12px;color:#666;">Sort:</span>
+      <button class="btn active" id="btn-az" onclick="setSort('az')">A → Z</button>
+      <button class="btn" id="btn-za" onclick="setSort('za')">Z → A</button>
+      <button class="btn" id="btn-len-asc" onclick="setSort('len-asc')">Shortest first</button>
+      <button class="btn" id="btn-len-desc" onclick="setSort('len-desc')">Longest first</button>
+      <button class="btn" id="btn-random" onclick="setSort('random')">Shuffle</button>
+      <button class="btn" id="btn-reverse" onclick="setSort('reverse')">Reverse</button>
+      <button class="btn" id="btn-none" onclick="setSort('none')">Original</button>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="pane-header">
+      <span class="pane-label">Output</span>
+      <div style="display:flex;gap:8px;">
+        <button class="btn" onclick="copyOutput()">Copy</button>
+      </div>
+    </div>
+    <div class="output empty" id="output">Sorted list will appear here.</div>
+    <div class="controls">
+      <span class="status" id="status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let sortMode = 'az';
+
+  const sortBtns = ['az','za','len-asc','len-desc','random','reverse','none'];
+
+  function setSort(mode) {
+    sortMode = mode;
+    sortBtns.forEach(id => {
+      document.getElementById('btn-' + id).className = 'btn' + (id === mode ? ' active' : '');
+    });
+    process();
+  }
+
+  function getLines() {
+    const raw = document.getElementById('input').value;
+    let lines = raw.split('\n');
+    if (document.getElementById('opt-trim').checked) lines = lines.map(l => l.trim());
+    if (document.getElementById('opt-empty').checked) lines = lines.filter(l => l.length > 0);
+    if (document.getElementById('opt-dedup').checked) lines = [...new Set(lines)];
+    return lines;
+  }
+
+  function process() {
+    let lines = getLines();
+    if (!lines.length) {
+      const out = document.getElementById('output');
+      out.textContent = 'Sorted list will appear here.';
+      out.className = 'output empty';
+      document.getElementById('status').textContent = '';
+      return;
+    }
+
+    const ignoreCase = document.getElementById('opt-case').checked;
+    const key = l => ignoreCase ? l.toLowerCase() : l;
+
+    switch (sortMode) {
+      case 'az': lines.sort((a, b) => key(a).localeCompare(key(b))); break;
+      case 'za': lines.sort((a, b) => key(b).localeCompare(key(a))); break;
+      case 'len-asc': lines.sort((a, b) => a.length - b.length || key(a).localeCompare(key(b))); break;
+      case 'len-desc': lines.sort((a, b) => b.length - a.length || key(a).localeCompare(key(b))); break;
+      case 'random': lines = lines.map(v => [Math.random(), v]).sort(([a],[b]) => a-b).map(([,v]) => v); break;
+      case 'reverse': lines.reverse(); break;
+      case 'none': break;
+    }
+
+    if (document.getElementById('opt-number').checked) {
+      lines = lines.map((l, i) => `${i + 1}. ${l}`);
+    }
+
+    const out = document.getElementById('output');
+    out.textContent = lines.join('\n');
+    out.className = 'output';
+    document.getElementById('status').textContent = `${lines.length} item${lines.length !== 1 ? 's' : ''}`;
+  }
+
+  function clearAll() {
+    document.getElementById('input').value = '';
+    process();
+  }
+
+  function copyOutput() {
+    const text = document.getElementById('output').textContent;
+    navigator.clipboard.writeText(text);
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }
+
+  function toggleHelp() {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
+  }
+</script>
+</body>
+</html>

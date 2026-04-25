@@ -13,6 +13,7 @@ Fast, in-browser utilities. No account. No upload. No tracking.
 | [JSON Formatter](json-formatter/) | Paste messy JSON, get it cleaned up and validated instantly |
 | [CSV ↔ JSON](csv-to-json/) | Convert between spreadsheet data and structured JSON, either direction |
 | [Diff Viewer](diff-viewer/) | Paste two versions of any text and see exactly what changed |
+| [List Sorter](list-sorter/) | Sort, deduplicate, shuffle, and clean any line-by-line list |
 | [Unit Converter](unit-converter/) | Convert between units across length, weight, temperature, cooking, data, and more |
 
 ---
