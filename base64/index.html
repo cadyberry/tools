@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Base64 Encoder / Decoder</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
+
+  .main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; }
+  .pane { display: flex; flex-direction: column; }
+  .pane + .pane { border-left: 1px solid #222; }
+  .pane-header { padding: 12px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; background: #141414; }
+  .pane-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+  textarea { flex: 1; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.8; background: #0f0f0f; border: none; outline: none; resize: none; color: #e0e0e0; min-height: 300px; }
+  .output-area { flex: 1; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.8; background: #0f0f0f; white-space: pre-wrap; overflow: auto; min-height: 300px; word-break: break-all; }
+  .output-area.empty { color: #444; font-style: italic; font-family: system-ui, sans-serif; font-size: 14px; }
+  .output-area.error { color: #f87171; font-family: system-ui, sans-serif; font-size: 14px; font-style: normal; }
+
+  .controls { padding: 12px 20px; border-top: 1px solid #222; background: #141414; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn.active { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .status { font-size: 12px; color: #555; margin-left: auto; }
+
+  .mode-bar { background: #0d0d0d; border-bottom: 1px solid #1a1a1a; padding: 10px 20px; display: flex; gap: 8px; align-items: center; }
+  .mode-label { font-size: 12px; color: #666; margin-right: 4px; }
+  .option-pill { padding: 5px 14px; border-radius: 20px; border: 1px solid #2a2a2a; font-size: 12px; color: #888; cursor: pointer; background: none; transition: all 0.15s; }
+  .option-pill:hover { color: #ccc; border-color: #444; }
+  .option-pill.active { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
+  .url-safe-wrap { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #666; cursor: pointer; }
+  .url-safe-wrap input { accent-color: #2563eb; cursor: pointer; }
+
+  @media (max-width: 640px) {
+    .main { grid-template-columns: 1fr; }
+    .pane + .pane { border-left: none; border-top: 1px solid #222; }
+    header { padding: 16px 20px; }
+    .help-bar, .mode-bar { padding: 10px 20px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>Base64 Encoder / Decoder</h1>
+</header>
+
+<div class="help-bar">
+  <span><strong>Base64</strong> — encode text to Base64 or decode Base64 back to plain text</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Pick Encode or Decode</strong>Encode turns plain text into Base64. Decode turns Base64 back into readable text.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Paste your input on the left</strong>Type or paste — the result appears instantly on the right.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Copy the result</strong>Hit Copy to grab the output.</div></div>
+  </div>
+  <div class="help-note">URL-safe mode replaces <code>+</code> with <code>-</code> and <code>/</code> with <code>_</code> — useful for tokens, query params, and JWT payloads.</div>
+</div>
+
+<div class="main">
+  <div class="pane">
+    <div class="pane-header">
+      <span class="pane-label" id="input-label">Plain text</span>
+      <button class="btn" onclick="clearAll()">Clear</button>
+    </div>
+    <div class="mode-bar">
+      <span class="mode-label">Mode:</span>
+      <button class="option-pill active" id="pill-encode" onclick="setMode('encode')">Encode → Base64</button>
+      <button class="option-pill" id="pill-decode" onclick="setMode('decode')">Decode ← Base64</button>
+      <label class="url-safe-wrap"><input type="checkbox" id="url-safe" onchange="process()"> URL-safe</label>
+    </div>
+    <textarea id="input" placeholder="Paste text here..." oninput="process()"></textarea>
+    <div class="controls">
+      <span class="status" id="in-status"></span>
+    </div>
+  </div>
+
+  <div class="pane">
+    <div class="pane-header">
+      <span class="pane-label" id="output-label">Base64 output</span>
+      <button class="btn" onclick="copyOutput()">Copy</button>
+    </div>
+    <div class="output-area empty" id="output">Result will appear here.</div>
+    <div class="controls">
+      <button class="btn" onclick="swapPanes()">↕ Swap input / output</button>
+      <span class="status" id="out-status"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let mode = 'encode';
+
+  function setMode(m) {
+    mode = m;
+    document.getElementById('pill-encode').className = 'option-pill' + (m === 'encode' ? ' active' : '');
+    document.getElementById('pill-decode').className = 'option-pill' + (m === 'decode' ? ' active' : '');
+    document.getElementById('input-label').textContent = m === 'encode' ? 'Plain text' : 'Base64 input';
+    document.getElementById('output-label').textContent = m === 'encode' ? 'Base64 output' : 'Decoded text';
+    process();
+  }
+
+  function process() {
+    const raw = document.getElementById('input').value;
+    const urlSafe = document.getElementById('url-safe').checked;
+    const out = document.getElementById('output');
+
+    if (!raw) {
+      out.textContent = 'Result will appear here.';
+      out.className = 'output-area empty';
+      document.getElementById('in-status').textContent = '';
+      document.getElementById('out-status').textContent = '';
+      return;
+    }
+
+    document.getElementById('in-status').textContent = `${raw.length} chars`;
+
+    try {
+      let result;
+      if (mode === 'encode') {
+        result = btoa(unescape(encodeURIComponent(raw)));
+        if (urlSafe) result = result.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+      } else {
+        let input = raw.trim();
+        if (urlSafe) input = input.replace(/-/g, '+').replace(/_/g, '/');
+        // pad if needed
+        const pad = input.length % 4;
+        if (pad === 2) input += '==';
+        else if (pad === 3) input += '=';
+        result = decodeURIComponent(escape(atob(input)));
+      }
+      out.textContent = result;
+      out.className = 'output-area';
+      document.getElementById('out-status').textContent = `${result.length} chars`;
+    } catch {
+      out.textContent = mode === 'decode'
+        ? 'Invalid Base64 — check that the input is valid Base64 text.'
+        : 'Could not encode — input may contain characters outside the supported range.';
+      out.className = 'output-area error';
+      document.getElementById('out-status').textContent = '';
+    }
+  }
+
+  function clearAll() {
+    document.getElementById('input').value = '';
+    process();
+  }
+
+  function copyOutput() {
+    const text = document.getElementById('output').textContent;
+    if (!text || document.getElementById('output').classList.contains('empty')) return;
+    navigator.clipboard.writeText(text);
+    const btn = event.target;
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }
+
+  function swapPanes() {
+    const outputText = document.getElementById('output').textContent;
+    if (!outputText || document.getElementById('output').classList.contains('empty') || document.getElementById('output').classList.contains('error')) return;
+    document.getElementById('input').value = outputText;
+    setMode(mode === 'encode' ? 'decode' : 'encode');
+  }
+
+  function toggleHelp() {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
+  }
+</script>
+</body>
+</html>

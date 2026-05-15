@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Regex Tester</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
+
+  /* Pattern bar */
+  .pattern-bar { padding: 16px 32px; background: #111; border-bottom: 1px solid #1e1e1e; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .pattern-wrap { display: flex; align-items: center; flex: 1; min-width: 240px; background: #141414; border: 1px solid #222; border-radius: 8px; overflow: hidden; }
+  .pattern-slash { padding: 0 10px; color: #555; font-family: 'Menlo', monospace; font-size: 18px; line-height: 1; user-select: none; }
+  #pattern { flex: 1; padding: 10px 0; font-family: 'Menlo', 'Monaco', monospace; font-size: 14px; background: transparent; border: none; outline: none; color: #a5b4fc; caret-color: #a5b4fc; }
+  #flags { width: 60px; padding: 10px 10px; font-family: 'Menlo', monospace; font-size: 14px; background: transparent; border: none; border-left: 1px solid #222; outline: none; color: #86efac; caret-color: #86efac; }
+  .pattern-wrap.error { border-color: #7f1d1d; }
+  .pattern-wrap.ok { border-color: #14532d; }
+  .error-msg { font-size: 12px; color: #f87171; }
+
+  .flag-pills { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .flag-label { font-size: 12px; color: #555; }
+  .flag-pill { padding: 4px 10px; border-radius: 20px; border: 1px solid #2a2a2a; font-size: 12px; color: #888; cursor: pointer; background: none; font-family: 'Menlo', monospace; transition: all 0.15s; }
+  .flag-pill:hover { color: #ccc; border-color: #444; }
+  .flag-pill.active { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
+
+  /* Test string */
+  .test-section { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .pane-header { padding: 12px 20px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; background: #141414; }
+  .pane-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* Highlighted output */
+  .test-wrap { position: relative; flex: 1; min-height: 200px; display: grid; }
+  .test-wrap textarea, .highlight-layer { grid-area: 1/1; padding: 20px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.8; }
+  .test-wrap textarea { background: transparent; border: none; outline: none; resize: none; color: #e0e0e0; z-index: 1; caret-color: #e0e0e0; }
+  .highlight-layer { background: #0f0f0f; color: transparent; white-space: pre-wrap; word-break: break-word; pointer-events: none; overflow: hidden; }
+  mark { background: rgba(251, 191, 36, 0.3); color: transparent; border-radius: 2px; outline: 1px solid rgba(251, 191, 36, 0.5); }
+
+  /* Match list */
+  .match-section { border-top: 1px solid #1a1a1a; padding: 16px 20px; background: #0a0a0a; max-height: 220px; overflow-y: auto; }
+  .match-header { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+  .match-count { font-size: 12px; font-weight: 600; }
+  .match-count.none { color: #555; }
+  .match-count.found { color: #22c55e; }
+  .match-list { display: flex; flex-direction: column; gap: 6px; }
+  .match-item { display: flex; gap: 12px; align-items: baseline; }
+  .match-idx { font-size: 11px; color: #555; width: 24px; flex-shrink: 0; }
+  .match-val { font-family: 'Menlo', monospace; font-size: 12px; color: #fbbf24; background: rgba(251, 191, 36, 0.08); padding: 2px 8px; border-radius: 4px; word-break: break-all; }
+  .match-pos { font-size: 11px; color: #444; }
+  .match-groups { font-size: 11px; color: #60a5fa; }
+  .no-match { font-size: 13px; color: #444; }
+
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+
+  @media (max-width: 600px) {
+    header, .pattern-bar, .match-section { padding: 16px 20px; }
+    .help-bar { padding: 10px 20px; }
+    .pattern-wrap { min-width: 100%; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>Regex Tester</h1>
+</header>
+
+<div class="help-bar">
+  <span><strong>Regex Tester</strong> — write a pattern and see matches highlighted live</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Enter your regex pattern</strong>Type the pattern between the slashes. Add flags after the second slash.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Paste your test string below</strong>Matches are highlighted in yellow as you type.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>See all matches listed</strong>Every match, its position, and any capture groups appear at the bottom.</div></div>
+  </div>
+  <div class="help-note">Use the flag buttons for common options: <strong>g</strong> = find all matches, <strong>i</strong> = ignore case, <strong>m</strong> = multiline, <strong>s</strong> = dot matches newline.</div>
+</div>
+
+<div class="pattern-bar">
+  <div class="pattern-wrap" id="pattern-wrap">
+    <span class="pattern-slash">/</span>
+    <input id="pattern" type="text" placeholder="pattern" autocomplete="off" autocorrect="off" spellcheck="false" oninput="run()">
+    <span class="pattern-slash">/</span>
+    <input id="flags" type="text" placeholder="gi" maxlength="6" autocomplete="off" autocorrect="off" spellcheck="false" oninput="syncFlagPills(); run()">
+  </div>
+  <div class="flag-pills">
+    <span class="flag-label">Flags:</span>
+    <button class="flag-pill active" id="pill-g" onclick="toggleFlag('g')">g</button>
+    <button class="flag-pill active" id="pill-i" onclick="toggleFlag('i')">i</button>
+    <button class="flag-pill" id="pill-m" onclick="toggleFlag('m')">m</button>
+    <button class="flag-pill" id="pill-s" onclick="toggleFlag('s')">s</button>
+  </div>
+  <span class="error-msg" id="pattern-error"></span>
+</div>
+
+<div class="test-section">
+  <div class="pane-header">
+    <span class="pane-label">Test string</span>
+    <button class="btn" onclick="clearAll()">Clear</button>
+  </div>
+  <div class="test-wrap">
+    <div class="highlight-layer" id="highlight-layer" aria-hidden="true"></div>
+    <textarea id="test-input" placeholder="Paste or type text to test your pattern against..." oninput="run()" onscroll="syncScroll()"></textarea>
+  </div>
+  <div class="match-section">
+    <div class="match-header">
+      <span>Matches</span>
+      <span class="match-count none" id="match-count">—</span>
+    </div>
+    <div class="match-list" id="match-list">
+      <div class="no-match">Enter a pattern above to start matching.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let currentFlags = 'gi';
+
+  function syncFlagPills() {
+    const f = document.getElementById('flags').value;
+    currentFlags = f;
+    ['g','i','m','s'].forEach(flag => {
+      const pill = document.getElementById('pill-' + flag);
+      pill.className = 'flag-pill' + (f.includes(flag) ? ' active' : '');
+    });
+  }
+
+  function toggleFlag(flag) {
+    let f = document.getElementById('flags').value;
+    f = f.includes(flag) ? f.replace(flag, '') : f + flag;
+    document.getElementById('flags').value = f;
+    currentFlags = f;
+    syncFlagPills();
+    run();
+  }
+
+  function run() {
+    const patternStr = document.getElementById('pattern').value;
+    const testStr = document.getElementById('test-input').value;
+    const flags = document.getElementById('flags').value.replace(/[^gimsuy]/g, '');
+    const wrap = document.getElementById('pattern-wrap');
+    const errEl = document.getElementById('pattern-error');
+    const matchList = document.getElementById('match-list');
+    const matchCount = document.getElementById('match-count');
+    const hl = document.getElementById('highlight-layer');
+
+    if (!patternStr) {
+      wrap.className = 'pattern-wrap';
+      errEl.textContent = '';
+      hl.innerHTML = escapeHtml(testStr);
+      matchList.innerHTML = '<div class="no-match">Enter a pattern above to start matching.</div>';
+      matchCount.textContent = '—';
+      matchCount.className = 'match-count none';
+      return;
+    }
+
+    let re;
+    try {
+      // Ensure 'g' flag for exec loop
+      const testFlags = flags.includes('g') ? flags : flags + 'g';
+      re = new RegExp(patternStr, testFlags);
+      wrap.className = 'pattern-wrap ok';
+      errEl.textContent = '';
+    } catch (e) {
+      wrap.className = 'pattern-wrap error';
+      errEl.textContent = e.message;
+      hl.innerHTML = escapeHtml(testStr);
+      matchList.innerHTML = '<div class="no-match" style="color:#f87171">Invalid pattern.</div>';
+      matchCount.textContent = 'Error';
+      matchCount.className = 'match-count none';
+      return;
+    }
+
+    // Collect matches
+    const matches = [];
+    let m;
+    re.lastIndex = 0;
+    let safetyLimit = 1000;
+    while ((m = re.exec(testStr)) !== null && safetyLimit-- > 0) {
+      matches.push({ value: m[0], index: m.index, groups: Array.from(m).slice(1) });
+      if (!flags.includes('g')) break;
+      if (m[0].length === 0) re.lastIndex++; // avoid infinite loop on zero-width match
+    }
+
+    // Highlight
+    if (!testStr) {
+      hl.innerHTML = '';
+    } else if (matches.length === 0) {
+      hl.innerHTML = escapeHtml(testStr);
+    } else {
+      let out = '';
+      let cursor = 0;
+      for (const match of matches) {
+        if (match.index > cursor) out += escapeHtml(testStr.slice(cursor, match.index));
+        out += '<mark>' + escapeHtml(match.value || ' ') + '</mark>';
+        cursor = match.index + (match.value.length || 1);
+      }
+      if (cursor < testStr.length) out += escapeHtml(testStr.slice(cursor));
+      hl.innerHTML = out;
+    }
+
+    // Match list
+    if (!testStr || matches.length === 0) {
+      matchCount.textContent = testStr ? '0 matches' : '—';
+      matchCount.className = 'match-count none';
+      matchList.innerHTML = '<div class="no-match">' + (testStr && patternStr ? 'No matches.' : 'Enter a pattern above to start matching.') + '</div>';
+      return;
+    }
+
+    matchCount.textContent = matches.length + (matches.length === 1 ? ' match' : ' matches');
+    matchCount.className = 'match-count found';
+
+    matchList.innerHTML = matches.slice(0, 200).map((match, i) => {
+      const groupStr = match.groups.filter(g => g !== undefined).length
+        ? ' <span class="match-groups">groups: ' + match.groups.map(g => g === undefined ? 'undefined' : JSON.stringify(g)).join(', ') + '</span>'
+        : '';
+      return `<div class="match-item">
+        <span class="match-idx">${i + 1}</span>
+        <span class="match-val">${escapeHtml(match.value)}</span>
+        <span class="match-pos">index ${match.index}–${match.index + match.value.length}</span>
+        ${groupStr}
+      </div>`;
+    }).join('') + (matches.length > 200 ? '<div class="no-match" style="margin-top:8px">... and ' + (matches.length - 200) + ' more</div>' : '');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function syncScroll() {
+    const ta = document.getElementById('test-input');
+    const hl = document.getElementById('highlight-layer');
+    hl.scrollTop = ta.scrollTop;
+    hl.scrollLeft = ta.scrollLeft;
+  }
+
+  function clearAll() {
+    document.getElementById('test-input').value = '';
+    run();
+  }
+
+  function toggleHelp() {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
+  }
+
+  // init flag pills to match default
+  document.getElementById('flags').value = 'gi';
+  syncFlagPills();
+</script>
+</body>
+</html>

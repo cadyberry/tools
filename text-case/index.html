@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Text Case Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
+
+  .input-section { padding: 24px 32px; border-bottom: 1px solid #1a1a1a; }
+  .input-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+  textarea { width: 100%; padding: 14px 16px; font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; line-height: 1.7; background: #141414; border: 1px solid #222; border-radius: 8px; outline: none; resize: vertical; color: #e0e0e0; min-height: 100px; }
+  textarea:focus { border-color: #333; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+
+  .results { padding: 24px 32px; flex: 1; }
+  .results-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+  .cases-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+  .case-row { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; }
+  .case-row:hover { border-color: #2a2a2a; }
+  .case-name { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 0.06em; }
+  .case-value { font-family: 'Menlo', 'Monaco', monospace; font-size: 13px; color: #d1d5db; word-break: break-all; line-height: 1.5; }
+  .case-value.empty { color: #333; font-style: italic; }
+  .case-footer { display: flex; justify-content: flex-end; margin-top: 4px; }
+  .copy-btn { background: none; border: 1px solid #2a2a2a; color: #666; padding: 3px 10px; border-radius: 5px; font-size: 11px; cursor: pointer; }
+  .copy-btn:hover { color: #aaa; border-color: #444; }
+
+  .placeholder-msg { color: #333; font-size: 15px; padding: 32px 0; }
+
+  @media (max-width: 600px) {
+    .input-section, .results { padding: 20px 20px; }
+    header { padding: 16px 20px; }
+    .help-bar { padding: 10px 20px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>Text Case Converter</h1>
+</header>
+
+<div class="help-bar">
+  <span><strong>Text Case Converter</strong> — convert text to camelCase, snake_case, kebab-case, and more</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Paste your text above</strong>Works with variable names, sentences, titles, phrases — anything.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>See all formats instantly</strong>Every case variant appears below as you type.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Click Copy on any row</strong>Grab exactly the format you need.</div></div>
+  </div>
+  <div class="help-note">Works with existing camelCase, snake_case, or normal sentences — the converter splits them all correctly.</div>
+</div>
+
+<div class="input-section">
+  <div class="input-label">
+    <span>Input</span>
+    <button class="btn" onclick="clearInput()">Clear</button>
+  </div>
+  <textarea id="input" placeholder="Paste text, a variable name, a sentence, a title..." oninput="convert()"></textarea>
+</div>
+
+<div class="results">
+  <div class="results-label">All formats</div>
+  <div class="cases-grid" id="grid">
+    <div class="placeholder-msg">Start typing to see all case conversions.</div>
+  </div>
+</div>
+
+<script>
+  const CASES = [
+    { name: 'camelCase',          fn: w => w[0].toLowerCase() + w.slice(1).map(capitalize).join('') },
+    { name: 'PascalCase',         fn: w => w.map(capitalize).join('') },
+    { name: 'snake_case',         fn: w => w.map(s => s.toLowerCase()).join('_') },
+    { name: 'SCREAMING_SNAKE_CASE', fn: w => w.map(s => s.toUpperCase()).join('_') },
+    { name: 'kebab-case',         fn: w => w.map(s => s.toLowerCase()).join('-') },
+    { name: 'COBOL-CASE',         fn: w => w.map(s => s.toUpperCase()).join('-') },
+    { name: 'dot.case',           fn: w => w.map(s => s.toLowerCase()).join('.') },
+    { name: 'Title Case',         fn: w => w.map(capitalize).join(' ') },
+    { name: 'Sentence case',      fn: w => { const s = w.map(s => s.toLowerCase()).join(' '); return s.charAt(0).toUpperCase() + s.slice(1); } },
+    { name: 'lowercase',          fn: w => w.map(s => s.toLowerCase()).join(' ') },
+    { name: 'UPPERCASE',          fn: w => w.map(s => s.toUpperCase()).join(' ') },
+    { name: 'path/case',          fn: w => w.map(s => s.toLowerCase()).join('/') },
+  ];
+
+  function capitalize(s) { return s.charAt(0).toUpperCase() + s.slice(1).toLowerCase(); }
+
+  function tokenize(text) {
+    // split on whitespace, underscores, hyphens, dots, slashes, and camelCase boundaries
+    return text
+      .replace(/([a-z])([A-Z])/g, '$1 $2')
+      .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
+      .split(/[\s_\-./\\]+/)
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  function convert() {
+    const raw = document.getElementById('input').value;
+    const grid = document.getElementById('grid');
+
+    if (!raw.trim()) {
+      grid.innerHTML = '<div class="placeholder-msg">Start typing to see all case conversions.</div>';
+      return;
+    }
+
+    const words = tokenize(raw.trim());
+    if (!words.length) { grid.innerHTML = ''; return; }
+
+    grid.innerHTML = CASES.map(({ name, fn }) => {
+      let result;
+      try { result = fn(words); } catch { result = ''; }
+      return `
+        <div class="case-row">
+          <div class="case-name">${name}</div>
+          <div class="case-value">${escapeHtml(result)}</div>
+          <div class="case-footer">
+            <button class="copy-btn" onclick="copyText(this, ${JSON.stringify(result)})">Copy</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function copyText(btn, text) {
+    navigator.clipboard.writeText(text);
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  }
+
+  function clearInput() {
+    document.getElementById('input').value = '';
+    convert();
+  }
+
+  function toggleHelp() {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
+  }
+</script>
+</body>
+</html>
