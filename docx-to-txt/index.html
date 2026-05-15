@@ -39,11 +39,16 @@
   }
   .drop-zone:hover { border-color: #444; background: #111; }
   .drop-zone.dragover { border-color: #2563eb; background: rgba(37,99,235,0.06); }
-  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
   .drop-icon { font-size: 32px; margin-bottom: 14px; color: #444; line-height: 1; }
   .drop-title { font-size: 17px; font-weight: 600; color: #ccc; margin-bottom: 6px; }
-  .drop-sub { font-size: 13px; color: #555; }
+  .drop-sub { font-size: 13px; color: #555; margin-bottom: 20px; }
   .drop-sub span { color: #60a5fa; }
+  .drop-btns { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+  .drop-btn { padding: 8px 20px; border-radius: 8px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .drop-btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .drop-btn.primary { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
+  .drop-btn.primary:hover { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+  .skipped-notice { margin: -8px 32px 16px; padding: 10px 14px; background: #1a1200; border: 1px solid #3a2e00; border-radius: 8px; font-size: 13px; color: #ca8a04; display: none; }
 
   /* File list */
   .file-list-wrap { padding: 0 32px 24px; flex: 1; }
@@ -107,7 +112,7 @@
 </div>
 <div class="help-panel" id="help-panel">
   <div class="help-steps">
-    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Drop .docx files in the zone</strong>Or click it to browse. Select as many as you want at once.</div></div>
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Drop files or a folder</strong>Drag .docx files in, or use "Select files" to pick multiple (hold Cmd/Ctrl), or "Select folder" to grab all .docx files from a directory at once.</div></div>
     <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Conversion is instant</strong>Each file is read and converted in your browser — nothing is uploaded anywhere.</div></div>
     <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Download individually or as a .zip</strong>Each file keeps its original name with a .txt extension. Download all at once as a zip if you have several.</div></div>
   </div>
@@ -119,12 +124,18 @@
     ondragover="handleDragOver(event)"
     ondragleave="handleDragLeave(event)"
     ondrop="handleDrop(event)">
-    <input type="file" id="file-input" multiple accept=".docx" onchange="handleFiles(this.files)">
     <div class="drop-icon">[ .docx ]</div>
-    <div class="drop-title">Drop files here or click to browse</div>
-    <div class="drop-sub">Accepts <span>.docx</span> files — single or bulk</div>
+    <div class="drop-title">Drop files or a folder here</div>
+    <div class="drop-sub">Accepts <span>.docx</span> files — or drag a whole folder</div>
+    <div class="drop-btns">
+      <button class="drop-btn primary" onclick="document.getElementById('file-input').click()">Select files</button>
+      <button class="drop-btn" onclick="document.getElementById('folder-input').click()">Select folder</button>
+    </div>
   </div>
+  <input type="file" id="file-input" multiple accept=".docx" style="display:none" onchange="handleFiles(this.files)">
+  <input type="file" id="folder-input" webkitdirectory multiple style="display:none" onchange="handleFilesFromFolder(this.files)">
 </div>
+<div class="skipped-notice" id="skipped-notice"></div>
 
 <div class="file-list-wrap" id="file-list-wrap" style="display:none">
   <div class="list-header">
@@ -138,8 +149,10 @@
 
 <div class="action-bar" id="action-bar" style="display:none">
   <button class="btn primary" id="btn-download-zip" onclick="downloadZip()" style="display:none">Download all as .zip</button>
-  <button class="btn" id="btn-add-more" onclick="document.getElementById('file-input-extra').click()">Add more files</button>
+  <button class="btn" onclick="document.getElementById('file-input-extra').click()">Add files</button>
+  <button class="btn" onclick="document.getElementById('folder-input-extra').click()">Add folder</button>
   <input type="file" id="file-input-extra" multiple accept=".docx" style="display:none" onchange="handleFiles(this.files)">
+  <input type="file" id="folder-input-extra" webkitdirectory multiple style="display:none" onchange="handleFilesFromFolder(this.files)">
   <span class="summary" id="summary"></span>
 </div>
 
@@ -414,6 +427,24 @@ function updateSummary() {
 }
 
 // ── File handling ─────────────────────────────────────────────────────────────
+function handleFilesFromFolder(fileList) {
+  const all = Array.from(fileList);
+  const docx = all.filter(f => /\.docx$/i.test(f.name));
+  const skipped = all.length - docx.length;
+  const notice = document.getElementById('skipped-notice');
+  if (skipped > 0) {
+    notice.textContent = `Skipped ${skipped} non-.docx file${skipped !== 1 ? 's' : ''} from the folder.`;
+    notice.style.display = '';
+    setTimeout(() => { notice.style.display = 'none'; }, 6000);
+  } else {
+    notice.style.display = 'none';
+  }
+  if (docx.length) handleFiles(docx);
+  // Reset so same folder can be re-selected
+  document.getElementById('folder-input').value = '';
+  document.getElementById('folder-input-extra').value = '';
+}
+
 function handleFiles(fileList) {
   if (!fileList || fileList.length === 0) return;
 
