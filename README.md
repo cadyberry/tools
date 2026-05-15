@@ -15,6 +15,10 @@ Fast, in-browser utilities. No account. No upload. No tracking.
 | [Diff Viewer](diff-viewer/) | Paste two versions of any text and see exactly what changed |
 | [List Sorter](list-sorter/) | Sort, deduplicate, shuffle, and clean any line-by-line list |
 | [Unit Converter](unit-converter/) | Convert between units across length, weight, temperature, cooking, data, and more |
+| [Text Case Converter](text-case/) | Convert text to camelCase, snake_case, PascalCase, kebab-case, and more — all at once |
+| [Base64 Encoder / Decoder](base64/) | Encode plain text to Base64 or decode Base64 back — includes URL-safe mode |
+| [Regex Tester](regex-tester/) | Write a pattern and see matches highlighted live, with positions and capture groups |
+| [DOCX to TXT](docx-to-txt/) | Convert one or many .docx files to plain text — single download or bundled .zip |
 
 ---
 
