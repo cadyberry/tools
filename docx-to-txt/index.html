@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DOCX to TXT Converter</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
+
+  /* Drop zone */
+  .drop-wrap { padding: 32px; }
+  .drop-zone {
+    border: 2px dashed #2a2a2a;
+    border-radius: 14px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .drop-zone:hover { border-color: #444; background: #111; }
+  .drop-zone.dragover { border-color: #2563eb; background: rgba(37,99,235,0.06); }
+  .drop-zone input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .drop-icon { font-size: 32px; margin-bottom: 14px; color: #444; line-height: 1; }
+  .drop-title { font-size: 17px; font-weight: 600; color: #ccc; margin-bottom: 6px; }
+  .drop-sub { font-size: 13px; color: #555; }
+  .drop-sub span { color: #60a5fa; }
+
+  /* File list */
+  .file-list-wrap { padding: 0 32px 24px; flex: 1; }
+  .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  .list-label { font-size: 12px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; }
+  .list-actions { display: flex; gap: 8px; }
+  .file-list { display: flex; flex-direction: column; gap: 10px; }
+
+  /* File card */
+  .file-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 16px 18px; display: flex; align-items: center; gap: 14px; transition: border-color 0.15s; }
+  .file-card.done  { border-color: #14532d; }
+  .file-card.error { border-color: #7f1d1d; }
+  .file-icon { width: 36px; height: 36px; border-radius: 8px; background: #1a1a1a; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 15px; color: #666; font-family: 'Menlo', monospace; font-weight: 700; letter-spacing: -0.04em; }
+  .file-icon.done  { background: rgba(34,197,94,0.1);  color: #22c55e; }
+  .file-icon.error { background: rgba(248,113,113,0.1); color: #f87171; }
+  .file-info { flex: 1; min-width: 0; }
+  .file-name { font-size: 14px; font-weight: 500; color: #ddd; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file-meta { font-size: 12px; color: #555; margin-top: 3px; }
+  .file-meta.error { color: #f87171; }
+  .file-actions { display: flex; gap: 8px; flex-shrink: 0; }
+
+  /* Buttons */
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn:disabled { opacity: 0.4; cursor: default; }
+  .btn.primary { background: #1e3a5f; border-color: #2563eb; color: #93c5fd; }
+  .btn.primary:hover { background: #1d4ed8; border-color: #3b82f6; color: #fff; }
+  .btn.danger { border-color: #3a1a1a; color: #888; }
+  .btn.danger:hover { border-color: #7f1d1d; color: #f87171; background: #1a0f0f; }
+
+  /* Processing spinner */
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid #333; border-top-color: #2563eb; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Action bar */
+  .action-bar { border-top: 1px solid #1a1a1a; padding: 16px 32px; display: flex; gap: 10px; align-items: center; background: #0d0d0d; }
+  .action-bar .summary { font-size: 13px; color: #555; margin-left: auto; }
+
+  /* Empty state */
+  .empty-state { padding: 40px 0 20px; text-align: center; color: #333; font-size: 14px; }
+
+  @media (max-width: 600px) {
+    .drop-wrap, .file-list-wrap { padding-left: 20px; padding-right: 20px; }
+    header { padding: 16px 20px; }
+    .help-bar, .action-bar { padding: 10px 20px; }
+    .file-card { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../">← Tools</a>
+  <span>/</span>
+  <h1>DOCX to TXT Converter</h1>
+</header>
+
+<div class="help-bar">
+  <span><strong>DOCX to TXT</strong> — convert Word documents to plain text, one file or many at once</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Drop .docx files in the zone</strong>Or click it to browse. Select as many as you want at once.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Conversion is instant</strong>Each file is read and converted in your browser — nothing is uploaded anywhere.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Download individually or as a .zip</strong>Each file keeps its original name with a .txt extension. Download all at once as a zip if you have several.</div></div>
+  </div>
+  <div class="help-note">Only .docx format is supported. The older .doc format (Word 97–2003) uses a binary format this tool cannot read — open it in Word and save as .docx first.</div>
+</div>
+
+<div class="drop-wrap">
+  <div class="drop-zone" id="drop-zone"
+    ondragover="handleDragOver(event)"
+    ondragleave="handleDragLeave(event)"
+    ondrop="handleDrop(event)">
+    <input type="file" id="file-input" multiple accept=".docx" onchange="handleFiles(this.files)">
+    <div class="drop-icon">[ .docx ]</div>
+    <div class="drop-title">Drop files here or click to browse</div>
+    <div class="drop-sub">Accepts <span>.docx</span> files — single or bulk</div>
+  </div>
+</div>
+
+<div class="file-list-wrap" id="file-list-wrap" style="display:none">
+  <div class="list-header">
+    <span class="list-label" id="list-label">Files</span>
+    <div class="list-actions">
+      <button class="btn danger" onclick="clearAll()">Clear all</button>
+    </div>
+  </div>
+  <div class="file-list" id="file-list"></div>
+</div>
+
+<div class="action-bar" id="action-bar" style="display:none">
+  <button class="btn primary" id="btn-download-zip" onclick="downloadZip()" style="display:none">Download all as .zip</button>
+  <button class="btn" id="btn-add-more" onclick="document.getElementById('file-input-extra').click()">Add more files</button>
+  <input type="file" id="file-input-extra" multiple accept=".docx" style="display:none" onchange="handleFiles(this.files)">
+  <span class="summary" id="summary"></span>
+</div>
+
+<script>
+// ── State ─────────────────────────────────────────────────────────────────────
+const entries = new Map(); // id → { id, name, size, status, text }
+let nextId = 0;
+
+// ── ZIP parser ────────────────────────────────────────────────────────────────
+async function extractFromZip(bytes, target) {
+  const v = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const len = bytes.length;
+
+  // Find end-of-central-directory (EOCD) record scanning from end
+  let eocd = -1;
+  for (let i = len - 22; i >= Math.max(0, len - 65557); i--) {
+    if (v.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new Error('Not a valid ZIP / DOCX file.');
+
+  const cdCount  = v.getUint16(eocd + 10, true);
+  const cdOffset = v.getUint32(eocd + 16, true);
+
+  let pos = cdOffset;
+  for (let i = 0; i < cdCount; i++) {
+    if (v.getUint32(pos, true) !== 0x02014b50) break;
+
+    const compress  = v.getUint16(pos + 10, true);
+    const compSize  = v.getUint32(pos + 20, true);
+    const fnLen     = v.getUint16(pos + 28, true);
+    const extraLen  = v.getUint16(pos + 30, true);
+    const cmtLen    = v.getUint16(pos + 32, true);
+    const lhOff     = v.getUint32(pos + 42, true);
+    const name      = new TextDecoder().decode(bytes.subarray(pos + 46, pos + 46 + fnLen));
+
+    pos += 46 + fnLen + extraLen + cmtLen;
+    if (name !== target) continue;
+
+    // Resolve actual data start via local header
+    const lhFnLen    = v.getUint16(lhOff + 26, true);
+    const lhExtraLen = v.getUint16(lhOff + 28, true);
+    const dataStart  = lhOff + 30 + lhFnLen + lhExtraLen;
+    const compData   = bytes.subarray(dataStart, dataStart + compSize);
+
+    if (compress === 0) return compData;
+    if (compress === 8) return await inflateRaw(compData);
+    throw new Error('Unsupported ZIP compression method: ' + compress);
+  }
+  throw new Error('word/document.xml not found — is this a valid .docx file?');
+}
+
+async function inflateRaw(data) {
+  const ds = new DecompressionStream('deflate-raw');
+  const w = ds.writable.getWriter();
+  w.write(data); w.close();
+  const chunks = [];
+  const r = ds.readable.getReader();
+  for (;;) { const {done, value} = await r.read(); if (done) break; chunks.push(value); }
+  const out = new Uint8Array(chunks.reduce((n, c) => n + c.length, 0));
+  let p = 0; for (const c of chunks) { out.set(c, p); p += c.length; }
+  return out;
+}
+
+// ── Word XML text extractor ───────────────────────────────────────────────────
+function extractText(xmlBytes) {
+  const xml = new TextDecoder('utf-8').decode(xmlBytes);
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+
+  const parseErr = doc.querySelector('parsererror');
+  if (parseErr) throw new Error('Could not parse document XML.');
+
+  const lines = [];
+
+  function walkBody(node) {
+    for (const child of node.childNodes) {
+      const ln = child.localName;
+      if (ln === 'p')   { lines.push(walkPara(child)); continue; }
+      if (ln === 'tbl') { walkTable(child); continue; }
+      if (ln === 'sdt') { // structured document tag
+        for (const c of child.childNodes) {
+          if (c.localName === 'sdtContent') walkBody(c);
+        }
+        continue;
+      }
+    }
+  }
+
+  function walkPara(p) {
+    let text = '';
+    for (const child of p.childNodes) {
+      const ln = child.localName;
+      if (ln === 'del') continue;                   // tracked deletion — skip
+      if (ln === 'r')   { text += walkRun(child); continue; }
+      if (ln === 'hyperlink' || ln === 'ins' || ln === 'sdt' || ln === 'sdtContent') {
+        text += walkPara(child); continue;          // recurse — contains runs
+      }
+    }
+    return text;
+  }
+
+  function walkRun(r) {
+    let text = '';
+    for (const child of r.childNodes) {
+      const ln = child.localName;
+      if (ln === 't')   { text += child.textContent; continue; }
+      if (ln === 'tab') { text += '\t'; continue; }
+      if (ln === 'br')  { text += '\n'; continue; }
+    }
+    return text;
+  }
+
+  function walkTable(tbl) {
+    for (const child of tbl.childNodes) {
+      if (child.localName !== 'tr') continue;
+      const cells = [];
+      for (const tc of child.childNodes) {
+        if (tc.localName !== 'tc') continue;
+        const cellLines = [];
+        for (const tcChild of tc.childNodes) {
+          if (tcChild.localName === 'p') cellLines.push(walkPara(tcChild));
+        }
+        cells.push(cellLines.join('\n'));
+      }
+      lines.push(cells.join('\t'));
+    }
+  }
+
+  const W = 'http://schemas.openxmlformats.org/wordprocessingml/2006/main';
+  const body = doc.getElementsByTagNameNS(W, 'body')[0];
+  if (!body) throw new Error('No document body found.');
+  walkBody(body);
+
+  // Collapse 3+ consecutive blank lines to 2, trim
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+// ── ZIP writer (for bulk download) ───────────────────────────────────────────
+function crc32(data) {
+  if (!crc32._t) {
+    crc32._t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      crc32._t[n] = c;
+    }
+  }
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < data.length; i++) c = crc32._t[(c ^ data[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buildZip(fileEntries) {
+  // fileEntries: [{name: string, data: Uint8Array}]
+  const enc = new TextEncoder();
+  const localParts = [], cdParts = [];
+  let localOffset = 0;
+
+  for (const {name, data} of fileEntries) {
+    const nb  = enc.encode(name);
+    const crc = crc32(data);
+
+    const lh = new Uint8Array(30 + nb.length);
+    const lv = new DataView(lh.buffer);
+    lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true);
+    lv.setUint16(8, 0, true);          // stored (no compression)
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, data.length, true); lv.setUint32(22, data.length, true);
+    lv.setUint16(26, nb.length, true);
+    lh.set(nb, 30);
+    localParts.push(lh, data);
+
+    const cd = new Uint8Array(46 + nb.length);
+    const cv = new DataView(cd.buffer);
+    cv.setUint32(0, 0x02014b50, true);
+    cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+    cv.setUint16(10, 0, true);         // stored
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+    cv.setUint16(28, nb.length, true);
+    cv.setUint32(42, localOffset, true);
+    cd.set(nb, 46);
+    cdParts.push(cd);
+
+    localOffset += 30 + nb.length + data.length;
+  }
+
+  const cdSize = cdParts.reduce((n, p) => n + p.length, 0);
+  const eocd = new Uint8Array(22);
+  const ev = new DataView(eocd.buffer);
+  ev.setUint32(0, 0x06054b50, true);
+  ev.setUint16(8, fileEntries.length, true); ev.setUint16(10, fileEntries.length, true);
+  ev.setUint32(12, cdSize, true); ev.setUint32(16, localOffset, true);
+
+  const all = [...localParts, ...cdParts, eocd];
+  const total = all.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(total);
+  let p = 0; for (const part of all) { out.set(part, p); p += part.length; }
+  return out;
+}
+
+// ── File conversion ───────────────────────────────────────────────────────────
+async function convertFile(id) {
+  const entry = entries.get(id);
+  const bytes = new Uint8Array(await entry.file.arrayBuffer());
+
+  const xmlBytes = await extractFromZip(bytes, 'word/document.xml');
+  return extractText(xmlBytes);
+}
+
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function txtName(originalName) {
+  return originalName.replace(/\.docx$/i, '') + '.txt';
+}
+
+function fmtSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+function renderCard(entry) {
+  const { id, name, size, status, error } = entry;
+  const outName = txtName(name);
+
+  let iconClass = '', iconText = '';
+  if (status === 'processing') { iconClass = ''; iconText = ''; }
+  else if (status === 'done')  { iconClass = 'done'; iconText = 'TXT'; }
+  else                         { iconClass = 'error'; iconText = '!'; }
+
+  let metaHtml = '';
+  if (status === 'processing') metaHtml = `<span>Converting...</span>`;
+  else if (status === 'done')  metaHtml = `<span>${outName} &middot; ${fmtSize(size)}</span>`;
+  else                         metaHtml = `<span class="error">${escHtml(error)}</span>`;
+
+  let actionsHtml = '';
+  if (status === 'processing') actionsHtml = `<span class="spinner"></span>`;
+  else if (status === 'done')  actionsHtml = `<button class="btn primary" onclick="downloadOne(${id})">Download .txt</button>`;
+
+  return `<div class="file-card ${status === 'done' ? 'done' : status === 'error' ? 'error' : ''}" id="card-${id}">
+    <div class="file-icon ${iconClass}">${status === 'processing' ? '<span class="spinner"></span>' : iconText}</div>
+    <div class="file-info">
+      <div class="file-name" title="${escHtml(name)}">${escHtml(name)}</div>
+      <div class="file-meta ${status === 'error' ? 'error' : ''}">${metaHtml}</div>
+    </div>
+    <div class="file-actions">${actionsHtml}</div>
+  </div>`;
+}
+
+function updateCard(id) {
+  const el = document.getElementById('card-' + id);
+  if (el) el.outerHTML = renderCard(entries.get(id));
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function updateSummary() {
+  const all = [...entries.values()];
+  const done = all.filter(e => e.status === 'done').length;
+  const err  = all.filter(e => e.status === 'error').length;
+  const proc = all.filter(e => e.status === 'processing').length;
+  const parts = [];
+  if (done)  parts.push(done  + ' converted');
+  if (err)   parts.push(err   + ' failed');
+  if (proc)  parts.push(proc  + ' processing');
+  document.getElementById('summary').textContent = parts.join(' · ');
+  document.getElementById('list-label').textContent = `Files (${all.length})`;
+
+  const zipBtn = document.getElementById('btn-download-zip');
+  zipBtn.style.display = done >= 2 ? '' : 'none';
+}
+
+// ── File handling ─────────────────────────────────────────────────────────────
+function handleFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+
+  document.getElementById('file-list-wrap').style.display = '';
+  document.getElementById('action-bar').style.display = '';
+
+  for (const file of fileList) {
+    const id = nextId++;
+    const entry = { id, name: file.name, size: file.size, file, status: 'processing', text: null, error: null };
+    entries.set(id, entry);
+
+    const list = document.getElementById('file-list');
+    const div = document.createElement('div');
+    div.innerHTML = renderCard(entry);
+    list.prepend(div.firstChild);
+
+    // Validate extension before trying
+    if (!/\.docx$/i.test(file.name)) {
+      entry.status = 'error';
+      entry.error = '.doc and other formats are not supported — save as .docx first.';
+      updateCard(id);
+      updateSummary();
+      continue;
+    }
+
+    convertFile(id).then(text => {
+      entry.status = 'done';
+      entry.text = text;
+      updateCard(id);
+      updateSummary();
+    }).catch(err => {
+      entry.status = 'error';
+      entry.error = err.message || 'Conversion failed.';
+      updateCard(id);
+      updateSummary();
+    });
+  }
+
+  updateSummary();
+  // Reset inputs so same file can be added again if cleared then re-added
+  document.getElementById('file-input').value = '';
+  document.getElementById('file-input-extra').value = '';
+}
+
+function downloadOne(id) {
+  const entry = entries.get(id);
+  if (!entry || entry.status !== 'done') return;
+  const blob = new Blob([entry.text], { type: 'text/plain;charset=utf-8' });
+  triggerDownload(blob, txtName(entry.name));
+}
+
+function downloadZip() {
+  const done = [...entries.values()].filter(e => e.status === 'done');
+  if (done.length < 2) return;
+  const enc = new TextEncoder();
+  const fileEntries = done.map(e => ({ name: txtName(e.name), data: enc.encode(e.text) }));
+  const zipBytes = buildZip(fileEntries);
+  const blob = new Blob([zipBytes], { type: 'application/zip' });
+  triggerDownload(blob, 'converted-documents.zip');
+}
+
+function triggerDownload(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+function clearAll() {
+  entries.clear(); nextId = 0;
+  document.getElementById('file-list').innerHTML = '';
+  document.getElementById('file-list-wrap').style.display = 'none';
+  document.getElementById('action-bar').style.display = 'none';
+}
+
+// ── Drag & drop ───────────────────────────────────────────────────────────────
+function handleDragOver(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.add('dragover');
+}
+function handleDragLeave(e) {
+  if (!document.getElementById('drop-zone').contains(e.relatedTarget))
+    document.getElementById('drop-zone').classList.remove('dragover');
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+}
+
+function toggleHelp() {
+  const p = document.getElementById('help-panel');
+  p.classList.toggle('open');
+  event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
+}
+</script>
+</body>
+</html>
