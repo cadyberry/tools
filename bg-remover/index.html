@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Background Remover</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span.sep { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .help-bar { background: #111; border-bottom: 1px solid #1a1a1a; padding: 10px 32px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #666; }
+  .help-bar strong { color: #aaa; font-weight: 500; }
+  .help-toggle { background: none; border: 1px solid #2a2a2a; color: #888; padding: 4px 10px; border-radius: 6px; font-size: 12px; cursor: pointer; }
+  .help-toggle:hover { color: #fff; border-color: #444; }
+  .help-panel { background: #111; border-bottom: 1px solid #1a1a1a; padding: 20px 32px; display: none; }
+  .help-panel.open { display: block; }
+  .help-steps { display: flex; gap: 32px; flex-wrap: wrap; margin-bottom: 16px; }
+  .help-step { display: flex; gap: 10px; align-items: flex-start; }
+  .step-num { width: 22px; height: 22px; border-radius: 50%; background: #2563eb; color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; }
+  .step-text { font-size: 13px; color: #aaa; line-height: 1.5; }
+  .step-text strong { color: #ddd; display: block; margin-bottom: 2px; }
+  .help-note { font-size: 12px; color: #555; border-top: 1px solid #1a1a1a; padding-top: 12px; margin-top: 4px; }
+
+  /* toolbar */
+  .toolbar { padding: 12px 32px; border-bottom: 1px solid #1a1a1a; background: #141414; display: flex; align-items: center; gap: 10px; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .btn.primary:hover:not(:disabled) { background: #1d4ed8; }
+  .spacer { flex: 1; }
+  .status-text { font-size: 12px; color: #555; }
+
+  /* main */
+  .main { flex: 1; padding: 32px; display: flex; flex-direction: column; align-items: center; }
+
+  /* upload zone */
+  .upload-zone {
+    width: 100%; max-width: 480px; min-height: 220px;
+    border: 2px dashed #2a2a2a; border-radius: 14px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 10px; cursor: pointer; transition: all 0.15s;
+    padding: 32px; text-align: center;
+  }
+  .upload-zone:hover, .upload-zone.drag-over { border-color: #3b82f6; background: rgba(59,130,246,0.05); }
+  .upload-icon { font-size: 36px; opacity: 0.4; }
+  .upload-label { font-size: 15px; color: #aaa; }
+  .upload-sub { font-size: 13px; color: #555; }
+
+  /* grid */
+  .grid { width: 100%; max-width: 960px; display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 14px; }
+
+  /* card */
+  .card { background: #141414; border: 1px solid #222; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.2s; }
+  .card.done { border-color: #1e3a5f; }
+  .card.error { border-color: #3a1e1e; }
+
+  .card-img-wrap {
+    aspect-ratio: 1; background: #1a1a1a; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .card-img-wrap.checker {
+    background-image:
+      linear-gradient(45deg, #252525 25%, transparent 25%),
+      linear-gradient(-45deg, #252525 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #252525 75%),
+      linear-gradient(-45deg, transparent 75%, #252525 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    background-color: #141414;
+  }
+  .card-img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+  .card-overlay {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px;
+    background: rgba(10,10,10,0.7); backdrop-filter: blur(2px);
+    font-size: 12px; color: #888;
+  }
+  .card-overlay.err { color: #f87171; }
+
+  .card-footer { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+  .card-name { font-size: 11px; color: #555; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+  .btn.sm { font-size: 11px; padding: 4px 8px; border-radius: 5px; }
+
+  /* add-more card */
+  .add-card {
+    border-style: dashed; border-color: #222; background: transparent;
+    min-height: 120px; cursor: pointer; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 6px;
+    border-radius: 12px; border-width: 1px; transition: all 0.15s;
+    padding: 16px;
+  }
+  .add-card:hover, .add-card.drag-over { border-color: #3b82f6; background: rgba(59,130,246,0.04); }
+  .add-icon { font-size: 24px; opacity: 0.3; }
+  .add-label { font-size: 12px; color: #555; }
+
+  /* spinner */
+  .spinner {
+    width: 26px; height: 26px;
+    border: 2px solid rgba(59,130,246,0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 600px) {
+    header, .help-bar, .help-panel, .toolbar { padding-left: 16px; padding-right: 16px; }
+    .main { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../">← Tools</a>
+  <span class="sep">/</span>
+  <h1>Background Remover</h1>
+</header>
+
+<div class="help-bar">
+  <span><strong>Background Remover</strong> — remove image backgrounds in your browser, no upload needed</span>
+  <button class="help-toggle" onclick="toggleHelp()">How to use</button>
+</div>
+<div class="help-panel" id="help-panel">
+  <div class="help-steps">
+    <div class="help-step"><div class="step-num">1</div><div class="step-text"><strong>Drop your images</strong>Drag one or more images onto the page, or click to browse. Batch supported — drop as many as you like.</div></div>
+    <div class="help-step"><div class="step-num">2</div><div class="step-text"><strong>Wait for processing</strong>Images process one at a time. The first run downloads the AI model (~40 MB) — after that it's cached.</div></div>
+    <div class="help-step"><div class="step-num">3</div><div class="step-text"><strong>Download</strong>Click ↓ on any card to save it as a transparent PNG, or use "Save all" to grab everything at once.</div></div>
+    <div class="help-step"><div class="step-num">4</div><div class="step-text"><strong>Toggle original</strong>Click "original" on a done card to compare before/after.</div></div>
+  </div>
+  <div class="help-note">Your images never leave your browser. The AI model is fetched once from a public CDN and cached locally.</div>
+</div>
+
+<div class="toolbar" id="toolbar" style="display:none">
+  <button class="btn" onclick="addMore()">+ Add more</button>
+  <span class="spacer"></span>
+  <span class="status-text" id="status-text"></span>
+  <button class="btn primary" id="save-all-btn" onclick="downloadAll()" disabled>Save all</button>
+</div>
+
+<div class="main" id="main">
+  <div class="upload-zone" id="upload-zone"
+    onclick="fileInput.click()"
+    ondragover="onDragOver(event)"
+    ondragleave="onDragLeave(event, this)"
+    ondrop="onDrop(event)">
+    <span class="upload-icon">✂</span>
+    <span class="upload-label">Drop images here or click to upload</span>
+    <span class="upload-sub">Batch supported — drop as many as you like</span>
+  </div>
+  <div class="grid" id="grid" style="display:none"></div>
+</div>
+
+<input type="file" id="fileInput" accept="image/*" multiple style="display:none" onchange="onFileSelected(event)">
+
+<script type="module">
+  const CDN = 'https://cdn.jsdelivr.net/npm/@imgly/background-removal@1.7.0/dist/';
+  let removeBackground = null;
+  const items = [];
+  let nextId = 0;
+  const queue = [];
+  let running = false;
+
+  window.fileInput = document.getElementById('fileInput');
+  const uploadZone = document.getElementById('upload-zone');
+  const grid       = document.getElementById('grid');
+  const toolbar    = document.getElementById('toolbar');
+  const statusEl   = document.getElementById('status-text');
+  const saveAllBtn = document.getElementById('save-all-btn');
+
+  // --- drag and drop ---
+  window.onDragOver = (e) => { e.preventDefault(); e.currentTarget.classList.add('drag-over'); };
+  window.onDragLeave = (e, el) => { e.preventDefault(); el.classList.remove('drag-over'); };
+  window.onDrop = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drag-over');
+    const files = [...(e.dataTransfer?.files || [])].filter(f => f.type.startsWith('image/'));
+    if (files.length) handleFiles(files);
+  };
+  window.onFileSelected = (e) => {
+    const files = [...(e.target.files || [])].filter(f => f.type.startsWith('image/'));
+    if (files.length) handleFiles(files);
+    e.target.value = '';
+  };
+  window.addMore = () => fileInput.click();
+
+  function handleFiles(files) {
+    showGrid();
+    for (const file of files) {
+      const item = { id: nextId++, file, name: file.name, originalUrl: URL.createObjectURL(file), resultUrl: null, status: 'queued', showOriginal: false };
+      items.push(item);
+      queue.push(item.id);
+      renderCard(item);
+    }
+    updateStatus();
+    runQueue();
+  }
+
+  function showGrid() {
+    uploadZone.style.display = 'none';
+    grid.style.display = '';
+    toolbar.style.display = '';
+    ensureAddCard();
+  }
+
+  function ensureAddCard() {
+    if (!document.getElementById('add-card')) {
+      const div = document.createElement('div');
+      div.id = 'add-card';
+      div.className = 'add-card';
+      div.innerHTML = '<span class="add-icon">+</span><span class="add-label">Add more</span>';
+      div.onclick = () => fileInput.click();
+      div.ondragover = (e) => { e.preventDefault(); div.classList.add('drag-over'); };
+      div.ondragleave = () => div.classList.remove('drag-over');
+      div.ondrop = (e) => { e.preventDefault(); div.classList.remove('drag-over'); const files = [...(e.dataTransfer?.files||[])].filter(f=>f.type.startsWith('image/')); if(files.length) handleFiles(files); };
+      grid.appendChild(div);
+    }
+  }
+
+  function renderCard(item) {
+    const existing = document.getElementById('card-' + item.id);
+    if (existing) { existing.remove(); }
+
+    const card = document.createElement('div');
+    card.id = 'card-' + item.id;
+    card.className = 'card' + (item.status === 'done' ? ' done' : item.status === 'error' ? ' error' : '');
+
+    const imgSrc = (item.status === 'done' && !item.showOriginal) ? item.resultUrl : item.originalUrl;
+    const checkerClass = (item.status === 'done' && !item.showOriginal) ? 'checker' : '';
+
+    let overlayHtml = '';
+    if (item.status === 'queued')     overlayHtml = '<div class="card-overlay"><span>queued</span></div>';
+    if (item.status === 'processing') overlayHtml = '<div class="card-overlay"><div class="spinner"></div></div>';
+    if (item.status === 'error')      overlayHtml = '<div class="card-overlay err"><span>failed</span></div>';
+
+    let actionsHtml = '';
+    if (item.status === 'done') {
+      actionsHtml = `
+        <button class="btn sm" onclick="toggleOriginal(${item.id})">${item.showOriginal ? 'result' : 'original'}</button>
+        <button class="btn sm primary" onclick="downloadItem(${item.id})">↓ save</button>`;
+    }
+    actionsHtml += `<button class="btn sm" onclick="removeItem(${item.id})" style="margin-left:auto">✕</button>`;
+
+    card.innerHTML = `
+      <div class="card-img-wrap ${checkerClass}">
+        <img class="card-img" src="${imgSrc}" alt="">
+        ${overlayHtml}
+      </div>
+      <div class="card-footer">
+        <div class="card-name" title="${item.name}">${item.name}</div>
+        <div class="card-actions">${actionsHtml}</div>
+      </div>`;
+
+    // insert before add-card
+    const addCard = document.getElementById('add-card');
+    grid.insertBefore(card, addCard);
+  }
+
+  async function runQueue() {
+    if (running) return;
+    running = true;
+
+    if (!removeBackground) {
+      try {
+        const mod = await import(`${CDN}browser.mjs`);
+        removeBackground = mod.removeBackground;
+      } catch (e) {
+        console.error('Failed to load background-removal library', e);
+        running = false;
+        return;
+      }
+    }
+
+    while (queue.length > 0) {
+      const id = queue.shift();
+      const item = items.find(i => i.id === id);
+      if (!item) continue;
+
+      item.status = 'processing';
+      renderCard(item);
+      updateStatus();
+
+      try {
+        const blob = await removeBackground(item.file, { publicPath: CDN });
+        item.resultUrl = URL.createObjectURL(blob);
+        item.status = 'done';
+      } catch (e) {
+        console.error(e);
+        item.status = 'error';
+      }
+
+      renderCard(item);
+      updateStatus();
+    }
+
+    running = false;
+  }
+
+  function updateStatus() {
+    const done = items.filter(i => i.status === 'done').length;
+    const pending = items.filter(i => i.status === 'queued' || i.status === 'processing').length;
+    if (pending > 0) statusEl.textContent = `${pending} remaining…`;
+    else if (done > 0) statusEl.textContent = `${done} done`;
+    else statusEl.textContent = '';
+    saveAllBtn.disabled = done < 2;
+    saveAllBtn.textContent = done > 1 ? `Save all (${done})` : 'Save all';
+  }
+
+  window.toggleOriginal = (id) => {
+    const item = items.find(i => i.id === id);
+    if (!item || item.status !== 'done') return;
+    item.showOriginal = !item.showOriginal;
+    renderCard(item);
+  };
+
+  window.downloadItem = (id) => {
+    const item = items.find(i => i.id === id);
+    if (!item?.resultUrl) return;
+    const a = document.createElement('a');
+    a.href = item.resultUrl;
+    a.download = item.name.replace(/\.[^.]+$/, '') + '-no-bg.png';
+    a.click();
+  };
+
+  window.downloadAll = () => {
+    items.filter(i => i.status === 'done').forEach(i => downloadItem(i.id));
+  };
+
+  window.removeItem = (id) => {
+    const idx = items.findIndex(i => i.id === id);
+    if (idx === -1) return;
+    const item = items[idx];
+    URL.revokeObjectURL(item.originalUrl);
+    if (item.resultUrl) URL.revokeObjectURL(item.resultUrl);
+    items.splice(idx, 1);
+    document.getElementById('card-' + id)?.remove();
+    updateStatus();
+    if (items.length === 0) {
+      grid.style.display = 'none';
+      toolbar.style.display = 'none';
+      uploadZone.style.display = '';
+    }
+  };
+
+  window.toggleHelp = () => {
+    const p = document.getElementById('help-panel');
+    p.classList.toggle('open');
+    event.target.textContent = p.classList.contains('open') ? 'Hide' : 'How to use';
+  };
+</script>
+</body>
+</html>

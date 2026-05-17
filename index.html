@@ -150,6 +150,16 @@
     <div class="card-use"><strong>Good for:</strong> Building and debugging regex patterns, validating formats like emails or dates, understanding a pattern someone else wrote.</div>
   </a>
 
+  <a class="card" href="bg-remover/">
+    <div class="card-top">
+      <div class="card-icon">✂</div>
+      <span class="open-btn">Open tool →</span>
+    </div>
+    <div class="card-title">Background Remover</div>
+    <div class="card-plain">Drop one or more images and get transparent PNGs back. Batch supported — drop as many as you like. Processes entirely in your browser using a local AI model.</div>
+    <div class="card-use"><strong>Good for:</strong> Product photos, profile pictures, stickers, anything where you need a clean cutout without Photoshop.</div>
+  </a>
+
   <a class="card" href="docx-to-txt/">
     <div class="card-top">
       <div class="card-icon">W→</div>
@@ -188,6 +198,7 @@
         <li>Base64: native <code>btoa</code> / <code>atob</code> with UTF-8 encode/decode</li>
         <li>Regex: JS <code>RegExp</code> with live highlighting via DOM overlay</li>
         <li>DOCX→TXT: ZIP binary parser → DEFLATE via <code>DecompressionStream</code> → Word XML walker; ZIP writer for bulk export</li>
+        <li>BG Remover: <code>@imgly/background-removal</code> ONNX model via WASM, fetched once from CDN and cached — images never leave the browser</li>
       </ul>
     </div>
     <div class="dev-block">
