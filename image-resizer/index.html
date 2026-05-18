@@ -42,6 +42,11 @@
   .quality-row input[type=range] { width: 80px; accent-color: #2563eb; }
   .quality-val { font-size: 11px; color: #888; min-width: 28px; }
 
+  .mode-row { display: flex; gap: 6px; align-items: center; }
+  .mode-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+  .mode-btn { padding: 4px 10px; border-radius: 20px; border: 1px solid #2a2a2a; background: #181818; color: #888; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .mode-btn:hover, .mode-btn.active { background: #1e3a5f; border-color: #2563eb; color: #60a5fa; }
+
   main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 32px; gap: 24px; }
 
   .drop-zone { width: 100%; max-width: 720px; border: 2px dashed #2a2a2a; border-radius: 16px; padding: 64px 32px; text-align: center; cursor: pointer; transition: all 0.15s; }
@@ -111,6 +116,13 @@
       <option value="png">PNG</option>
       <option value="webp">WebP</option>
     </select>
+  </div>
+
+  <div class="mode-row">
+    <span class="mode-label">Mode</span>
+    <button class="mode-btn active" data-mode="fill">Fill (crop)</button>
+    <button class="mode-btn" data-mode="fit">Fit (letterbox)</button>
+    <button class="mode-btn" data-mode="stretch">Stretch</button>
   </div>
 
   <div class="quality-row">
@@ -196,6 +208,7 @@ let currentFile = null;
 let origFileSize = 0;
 let outputBlob = null;
 let outputFilename = 'resized';
+let currentMode = 'fill';
 
 // Preset buttons
 document.querySelectorAll('.preset-btn').forEach(btn => {
@@ -225,6 +238,16 @@ qualRange.addEventListener('input', () => {
 }));
 
 fmtSelect.addEventListener('change', () => { if (currentFile) renderPreview(); });
+
+// Mode buttons
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    if (currentFile) renderPreview();
+  });
+});
 
 // Drop zone
 dropZone.addEventListener('click', () => fileInput.click());
@@ -260,6 +283,26 @@ function loadFile(file) {
   };
 }
 
+function drawScaled(ctx, img, cw, ch, mode) {
+  const iw = img.naturalWidth, ih = img.naturalHeight;
+  ctx.clearRect(0, 0, cw, ch);
+  if (mode === 'stretch') {
+    ctx.drawImage(img, 0, 0, cw, ch);
+  } else if (mode === 'fit') {
+    const scale = Math.min(cw / iw, ch / ih);
+    const dw = iw * scale, dh = ih * scale;
+    const dx = (cw - dw) / 2, dy = (ch - dh) / 2;
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, cw, ch);
+    ctx.drawImage(img, dx, dy, dw, dh);
+  } else { // fill — crop to center
+    const scale = Math.max(cw / iw, ch / ih);
+    const sw = cw / scale, sh = ch / scale;
+    const sx = (iw - sw) / 2, sy = (ih - sh) / 2;
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, cw, ch);
+  }
+}
+
 function renderPreview() {
   const w = parseInt(wInput.value) || origImg.naturalWidth;
   const h = parseInt(hInput.value) || origImg.naturalHeight;
@@ -272,13 +315,13 @@ function renderPreview() {
   hiddenCanvas.width = w;
   hiddenCanvas.height = h;
   const ctx = hiddenCanvas.getContext('2d');
-  ctx.drawImage(origImg, 0, 0, w, h);
+  drawScaled(ctx, origImg, w, h, currentMode);
 
   // Also draw preview
   outCanvas.width = outCanvas.offsetWidth || 320;
   outCanvas.height = 180;
   const pctx = outCanvas.getContext('2d');
-  pctx.drawImage(origImg, 0, 0, outCanvas.width, outCanvas.height);
+  drawScaled(pctx, origImg, outCanvas.width, outCanvas.height, currentMode);
 
   outInfo.textContent = `${w} × ${h}`;
   dimsVal.textContent = `${w} × ${h} px`;
