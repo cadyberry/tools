@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Image Resizer</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f0f0f; color: #e0e0e0; min-height: 100vh; display: flex; flex-direction: column; }
+
+  header { padding: 20px 32px; border-bottom: 1px solid #222; display: flex; align-items: center; gap: 12px; }
+  header a { color: #888; text-decoration: none; font-size: 14px; }
+  header a:hover { color: #fff; }
+  header span.sep { color: #444; }
+  h1 { font-size: 18px; font-weight: 600; }
+
+  .toolbar { padding: 12px 32px; border-bottom: 1px solid #1a1a1a; background: #141414; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .btn { padding: 6px 14px; border-radius: 6px; border: 1px solid #333; background: #1e1e1e; color: #ccc; font-size: 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+  .btn:hover { background: #2a2a2a; color: #fff; border-color: #555; }
+  .btn:disabled { opacity: 0.35; cursor: default; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; color: #fff; }
+  .btn.primary:hover:not(:disabled) { background: #1d4ed8; }
+  .spacer { flex: 1; }
+
+  .presets { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .preset-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; margin-right: 2px; }
+  .preset-btn { padding: 4px 10px; border-radius: 20px; border: 1px solid #2a2a2a; background: #181818; color: #888; font-size: 11px; cursor: pointer; transition: all 0.15s; }
+  .preset-btn:hover, .preset-btn.active { background: #1e3a5f; border-color: #2563eb; color: #60a5fa; }
+
+  .custom-dims { display: flex; gap: 6px; align-items: center; }
+  .custom-dims input { width: 72px; padding: 4px 8px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; color: #e0e0e0; font-size: 12px; text-align: center; }
+  .custom-dims input:focus { outline: none; border-color: #2563eb; }
+  .custom-dims span { color: #555; font-size: 12px; }
+
+  .format-row { display: flex; gap: 6px; align-items: center; }
+  .format-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+  select { padding: 4px 8px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 6px; color: #e0e0e0; font-size: 12px; cursor: pointer; }
+  select:focus { outline: none; border-color: #2563eb; }
+
+  .quality-row { display: flex; gap: 6px; align-items: center; }
+  .quality-row label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+  .quality-row input[type=range] { width: 80px; accent-color: #2563eb; }
+  .quality-val { font-size: 11px; color: #888; min-width: 28px; }
+
+  main { flex: 1; display: flex; flex-direction: column; align-items: center; padding: 32px; gap: 24px; }
+
+  .drop-zone { width: 100%; max-width: 720px; border: 2px dashed #2a2a2a; border-radius: 16px; padding: 64px 32px; text-align: center; cursor: pointer; transition: all 0.15s; }
+  .drop-zone:hover, .drop-zone.drag-over { border-color: #2563eb; background: rgba(37,99,235,0.05); }
+  .drop-icon { font-size: 40px; margin-bottom: 12px; }
+  .drop-title { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .drop-sub { font-size: 13px; color: #666; }
+  #file-input { display: none; }
+
+  .preview-wrap { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 16px; }
+  .preview-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .preview-box { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; }
+  .preview-box-label { padding: 10px 14px; font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; border-bottom: 1px solid #1a1a1a; display: flex; justify-content: space-between; }
+  .preview-box-label span { color: #888; font-size: 11px; text-transform: none; letter-spacing: 0; }
+  .preview-box img, .preview-box canvas { width: 100%; height: 180px; object-fit: contain; display: block; background: #0f0f0f; }
+
+  .output-info { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 16px 20px; display: flex; gap: 32px; flex-wrap: wrap; }
+  .info-item { display: flex; flex-direction: column; gap: 3px; }
+  .info-key { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.06em; }
+  .info-val { font-size: 14px; color: #e0e0e0; font-weight: 500; }
+  .info-val.green { color: #22c55e; }
+  .info-val.yellow { color: #eab308; }
+  .info-val.red { color: #ef4444; }
+
+  .download-row { display: flex; gap: 10px; }
+  .btn.big { padding: 10px 24px; font-size: 14px; }
+
+  @media (max-width: 600px) {
+    header, .toolbar, main { padding-left: 16px; padding-right: 16px; }
+    .preview-pair { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="../">← All tools</a>
+  <span class="sep">/</span>
+  <h1>Image Resizer</h1>
+</header>
+
+<div class="toolbar">
+  <div class="presets">
+    <span class="preset-label">Presets</span>
+    <button class="preset-btn active" data-w="3360" data-h="840" data-fmt="jpeg" data-q="85">Etsy Banner</button>
+    <button class="preset-btn" data-w="1200" data-h="628" data-fmt="jpeg" data-q="85">OG / Social</button>
+    <button class="preset-btn" data-w="1080" data-h="1080" data-fmt="jpeg" data-q="85">Instagram Square</button>
+    <button class="preset-btn" data-w="1080" data-h="1920" data-fmt="jpeg" data-q="85">Instagram Story</button>
+    <button class="preset-btn" data-w="1500" data-h="500" data-fmt="jpeg" data-q="85">Twitter Banner</button>
+    <button class="preset-btn" data-w="0" data-h="0" data-fmt="jpeg" data-q="90">Custom</button>
+  </div>
+  <div class="spacer"></div>
+</div>
+
+<div class="toolbar" style="gap:16px;">
+  <div class="custom-dims">
+    <input type="number" id="w-input" placeholder="W" value="3360" min="1">
+    <span>×</span>
+    <input type="number" id="h-input" placeholder="H" value="840" min="1">
+    <span style="color:#555; font-size:11px;">px</span>
+  </div>
+
+  <div class="format-row">
+    <span class="format-label">Format</span>
+    <select id="fmt-select">
+      <option value="jpeg" selected>JPG</option>
+      <option value="png">PNG</option>
+      <option value="webp">WebP</option>
+    </select>
+  </div>
+
+  <div class="quality-row">
+    <label for="quality-range">Quality</label>
+    <input type="range" id="quality-range" min="1" max="100" value="85">
+    <span class="quality-val" id="quality-val">85%</span>
+  </div>
+
+  <button class="btn primary" id="process-btn" disabled>Resize &amp; Download</button>
+</div>
+
+<main>
+  <div class="drop-zone" id="drop-zone">
+    <div class="drop-icon">🖼</div>
+    <div class="drop-title">Drop an image here</div>
+    <div class="drop-sub">or click to choose a file — JPG, PNG, WebP, GIF</div>
+    <input type="file" id="file-input" accept="image/*">
+  </div>
+
+  <div class="preview-wrap" id="preview-wrap" style="display:none;">
+    <div class="preview-pair">
+      <div class="preview-box">
+        <div class="preview-box-label">Original <span id="orig-info"></span></div>
+        <img id="orig-img" alt="original">
+      </div>
+      <div class="preview-box">
+        <div class="preview-box-label">Output <span id="out-info"></span></div>
+        <canvas id="out-canvas"></canvas>
+      </div>
+    </div>
+
+    <div class="output-info">
+      <div class="info-item">
+        <span class="info-key">Original size</span>
+        <span class="info-val" id="orig-size-val">—</span>
+      </div>
+      <div class="info-item">
+        <span class="info-key">Output size</span>
+        <span class="info-val" id="out-size-val">—</span>
+      </div>
+      <div class="info-item">
+        <span class="info-key">Reduction</span>
+        <span class="info-val" id="reduction-val">—</span>
+      </div>
+      <div class="info-item">
+        <span class="info-key">Dimensions</span>
+        <span class="info-val" id="dims-val">—</span>
+      </div>
+    </div>
+
+    <div class="download-row">
+      <button class="btn primary big" id="download-btn">Download</button>
+      <button class="btn big" id="reset-btn">Start over</button>
+    </div>
+  </div>
+</main>
+
+<canvas id="hidden-canvas" style="display:none;"></canvas>
+
+<script>
+const dropZone   = document.getElementById('drop-zone');
+const fileInput  = document.getElementById('file-input');
+const wInput     = document.getElementById('w-input');
+const hInput     = document.getElementById('h-input');
+const fmtSelect  = document.getElementById('fmt-select');
+const qualRange  = document.getElementById('quality-range');
+const qualVal    = document.getElementById('quality-val');
+const processBtn = document.getElementById('process-btn');
+const previewWrap= document.getElementById('preview-wrap');
+const origImg    = document.getElementById('orig-img');
+const outCanvas  = document.getElementById('out-canvas');
+const hiddenCanvas = document.getElementById('hidden-canvas');
+const origInfo   = document.getElementById('orig-info');
+const outInfo    = document.getElementById('out-info');
+const origSizeVal= document.getElementById('orig-size-val');
+const outSizeVal = document.getElementById('out-size-val');
+const reductionVal= document.getElementById('reduction-val');
+const dimsVal    = document.getElementById('dims-val');
+const downloadBtn= document.getElementById('download-btn');
+const resetBtn   = document.getElementById('reset-btn');
+
+let currentFile = null;
+let origFileSize = 0;
+let outputBlob = null;
+let outputFilename = 'resized';
+
+// Preset buttons
+document.querySelectorAll('.preset-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const w = btn.dataset.w, h = btn.dataset.h;
+    if (w !== '0') { wInput.value = w; hInput.value = h; }
+    fmtSelect.value = btn.dataset.fmt;
+    qualRange.value = btn.dataset.q;
+    qualVal.textContent = btn.dataset.q + '%';
+    if (currentFile) renderPreview();
+  });
+});
+
+// Quality slider
+qualRange.addEventListener('input', () => {
+  qualVal.textContent = qualRange.value + '%';
+  if (currentFile) renderPreview();
+});
+
+// Dim inputs
+[wInput, hInput].forEach(el => el.addEventListener('input', () => {
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector('.preset-btn[data-w="0"]').classList.add('active');
+  if (currentFile) renderPreview();
+}));
+
+fmtSelect.addEventListener('change', () => { if (currentFile) renderPreview(); });
+
+// Drop zone
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+function loadFile(file) {
+  currentFile = file;
+  origFileSize = file.size;
+  outputFilename = file.name.replace(/\.[^.]+$/, '');
+  const url = URL.createObjectURL(file);
+  origImg.src = url;
+  origImg.onload = () => {
+    origInfo.textContent = `${origImg.naturalWidth} × ${origImg.naturalHeight}`;
+    origSizeVal.textContent = fmtBytes(file.size);
+    processBtn.removeAttribute('disabled');
+    dropZone.style.display = 'none';
+    previewWrap.style.display = 'flex';
+    renderPreview();
+  };
+}
+
+function renderPreview() {
+  const w = parseInt(wInput.value) || origImg.naturalWidth;
+  const h = parseInt(hInput.value) || origImg.naturalHeight;
+  const fmt = fmtSelect.value;
+  const quality = parseInt(qualRange.value) / 100;
+  const mime = fmt === 'png' ? 'image/png' : fmt === 'webp' ? 'image/webp' : 'image/jpeg';
+  const ext = fmt === 'png' ? 'png' : fmt === 'webp' ? 'webp' : 'jpg';
+
+  // Draw to hidden full-res canvas
+  hiddenCanvas.width = w;
+  hiddenCanvas.height = h;
+  const ctx = hiddenCanvas.getContext('2d');
+  ctx.drawImage(origImg, 0, 0, w, h);
+
+  // Also draw preview
+  outCanvas.width = outCanvas.offsetWidth || 320;
+  outCanvas.height = 180;
+  const pctx = outCanvas.getContext('2d');
+  pctx.drawImage(origImg, 0, 0, outCanvas.width, outCanvas.height);
+
+  outInfo.textContent = `${w} × ${h}`;
+  dimsVal.textContent = `${w} × ${h} px`;
+
+  hiddenCanvas.toBlob(blob => {
+    if (!blob) return;
+    outputBlob = blob;
+    const outSize = blob.size;
+    const reduction = ((origFileSize - outSize) / origFileSize * 100);
+
+    outSizeVal.textContent = fmtBytes(outSize);
+    outSizeVal.className = 'info-val ' + (outSize < 2*1024*1024 ? 'green' : outSize < 5*1024*1024 ? 'yellow' : 'red');
+    reductionVal.textContent = reduction > 0 ? `-${reduction.toFixed(0)}%` : `+${Math.abs(reduction).toFixed(0)}%`;
+    reductionVal.className = 'info-val ' + (reduction > 0 ? 'green' : 'red');
+
+    downloadBtn.onclick = () => {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${outputFilename}-${w}x${h}.${ext}`;
+      a.click();
+    };
+  }, mime, quality);
+}
+
+processBtn.addEventListener('click', () => { if (outputBlob) downloadBtn.click(); });
+
+resetBtn.addEventListener('click', () => {
+  currentFile = null;
+  outputBlob = null;
+  fileInput.value = '';
+  origImg.src = '';
+  processBtn.setAttribute('disabled', '');
+  dropZone.style.display = '';
+  previewWrap.style.display = 'none';
+});
+</script>
+</body>
+</html>
